@@ -1,5 +1,4 @@
 require('dotenv/config');
-const config = process.env;
 
 const fs = require('node:fs');
 
@@ -11,6 +10,8 @@ const Logger = require('../util/logger');
 const Button = require('../modules/button');
 const Embed = require('../modules/embed');
 
+const Player = require('../manegers/Player');
+
 class Blob extends Discord.Client {
    constructor() {
       super({
@@ -18,8 +19,11 @@ class Blob extends Discord.Client {
             intents.Guilds,
             intents.MessageContent,
             intents.GuildMessages,
+            intents.GuildVoiceStates,
+            intents.GuildMembers,
          ],
       });
+      this.config = process.env;
 
       this.commands = new Discord.Collection();
 
@@ -28,6 +32,8 @@ class Blob extends Discord.Client {
       this.button = new Button(this);
       this.embed = new Embed(this);
 
+      this.player = new Player(this);
+
       this.LoadEvents();
       this.LoadCommands();
 
@@ -35,9 +41,7 @@ class Blob extends Discord.Client {
    }
 
    LoadEvents() {
-      const files = fs
-         .readdirSync('./source/events')
-         .filter((file) => file.endsWith('.js'));
+      const files = fs.readdirSync('./source/events')
       try {
          this.log.async('Started loading events:');
          files.forEach(async (file) => {
@@ -45,13 +49,9 @@ class Blob extends Discord.Client {
                const Event = require(`../events/${file}`);
                const event = new Event();
                if (event.once) {
-                  this.once(event.name, (...args) =>
-                     event.execute(this, ...args)
-                  );
+                  this.once(event.name, (...args) => event.execute(this, ...args));
                } else {
-                  this.on(event.name, (...args) =>
-                     event.execute(this, ...args)
-                  );
+                  this.on(event.name, (...args) => event.execute(this, ...args));
                }
                this.log.info(`${file} working`);
             } catch (error) {
@@ -87,9 +87,7 @@ class Blob extends Discord.Client {
                this.log.erro(`${file} failed: ${error}`);
             }
          });
-         this.log.done(
-            `Successfully loaded ${this.commands.size} commands.`
-         );
+         this.log.done(`Successfully loaded ${this.commands.size} commands.`);
       } catch (error) {
          this.log.erro(`Error loading commands.`);
          throw new Error(error);
@@ -97,9 +95,7 @@ class Blob extends Discord.Client {
    }
 
    async LoadInteractions() {
-      const rest = new Discord.REST({ version: '10' }).setToken(
-         config.TOKEN
-      );
+      const rest = new Discord.REST({ version: '10' }).setToken(this.config.DISCORD_TOKEN);
 
       try {
          if (this.commands.size == 0) {
@@ -108,12 +104,9 @@ class Blob extends Discord.Client {
          }
 
          this.log.async(`Started loading interactions:`);
-         const data = await rest.put(
-            Discord.Routes.applicationCommands(config.ID),
-            {
-               body: this.commands.map((command) => command),
-            }
-         );
+         const data = await rest.put(Discord.Routes.applicationCommands(this.config.DISCORD_ID), {
+            body: this.commands.map((command) => command),
+         });
 
          data.forEach((command) => {
             this.commands.set(command.name, {
@@ -122,9 +115,7 @@ class Blob extends Discord.Client {
             });
          });
 
-         this.log.done(
-            `Successfully loaded ${data.length} interactions`
-         );
+         this.log.done(`Successfully loaded ${data.length} interactions`);
       } catch (error) {
          this.log.erro(`Error loading interactions.`);
          throw new Error(error);
@@ -133,7 +124,7 @@ class Blob extends Discord.Client {
 
    async build() {
       try {
-         this.login(config.TOKEN);
+         this.login(this.config.DISCORD_TOKEN);
       } catch (err) {
          console.error(err);
       }

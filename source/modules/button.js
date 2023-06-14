@@ -58,61 +58,49 @@ class Buttons {
       return button;
    }
 
-   async pagination({
-      interaction = {},
-      pages = [],
-      type = 'embeds',
-      style = 'Primary',
-   }) {
-      if (!Array.isArray(pages))
-         throw new Error('Pages is not array!');
-      if (!(type === 'embeds' || type === 'content'))
-         throw new Error('Invalid type');
+   menu({ id, placeholder, options }) {
+      const menu = new Discord.StringSelectMenuBuilder();
+      menu.setCustomId(id);
+      menu.setPlaceholder(placeholder);
+      menu.addOptions(options);
+      return menu;
+   }
+
+   async pagination({ interaction = {}, pages = [], type = 'embeds', style = 'Primary' }) {
+      if (!Array.isArray(pages)) throw new Error('Pages is not array!');
+      if (!(type === 'embeds' || type === 'content')) throw new Error('Invalid type');
 
       try {
-         let page = 0;
-
-         const first = this.emoji(
-            'first',
-            '<:first:1070496991345377411>',
-            style
-         ).setDisabled(true);
-         const previous = this.emoji(
-            'previous',
-            '<:previous:1070496467254513706>',
-            style
-         ).setDisabled(true);
-         const number = this.secondary(
-            'number',
-            `${page + 1}/${pages.length}`
-         ).setDisabled(true);
-         const next = this.emoji(
-            'next',
-            '<:next:1070496518420844566>',
-            style
-         );
-         const last = this.emoji(
-            'last',
-            '<:last:1070497040997568634>',
-            style
-         );
-
-         const buttons = [first, previous, number, next, last];
-         const row = this.row(buttons);
-
-         const message = await interaction.reply({
-            [type]: type === 'embeds' ? [pages[page]] : pages[page],
-            components: pages.length > 1 ? [row] : [],
-            fetchReply: true,
-         });
-
          if (pages.length > 1) {
-            const collector = message.createMessageComponentCollector(
-               {
-                  componentType: Discord.ComponentType.Button,
-                  time: 30000,
-               }
+            let page = 0;
+
+            const first = this.emoji('first', '<:first:1070496991345377411>', style).setDisabled(
+               true
             );
+            const previous = this.emoji(
+               'previous',
+               '<:previous:1070496467254513706>',
+               style
+            ).setDisabled(true);
+            const number = this.secondary('number', `${page + 1}/${pages.length}`).setDisabled(
+               true
+            );
+            const next = this.emoji('next', '<:next:1070496518420844566>', style);
+            const last = this.emoji('last', '<:last:1070497040997568634>', style);
+
+            const buttons = [first, previous, number, next, last];
+            const row = this.row(buttons);
+
+            const message = await interaction.reply({
+               [type]: type === 'embeds' ? [pages[page]] : pages[page],
+               components: pages.length > 1 ? [row] : [],
+               fetchReply: true,
+            });
+            
+            const collector = message.createMessageComponentCollector({
+               componentType: Discord.ComponentType.Button,
+               time: 30000,
+            });
 
             collector.on('collect', async (collect) => {
                if (!collect.isButton()) return;
@@ -126,8 +114,7 @@ class Buttons {
                      page = page == 0 ? page : page - 1;
                      break;
                   case 'next':
-                     page =
-                        page == pages.length - 1 ? page : page + 1;
+                     page = page == pages.length - 1 ? page : page + 1;
                      break;
                   case 'last':
                      page = pages.length - 1;
@@ -158,10 +145,7 @@ class Buttons {
 
                try {
                   await message.edit({
-                     [type]:
-                        type === 'embeds'
-                           ? [pages[page]]
-                           : pages[page],
+                     [type]: type === 'embeds' ? [pages[page]] : pages[page],
                      components: [row],
                      fetchReply: true,
                   });
@@ -177,10 +161,7 @@ class Buttons {
                      button.setStyle('Secondary');
                   });
                   await message.edit({
-                     [type]:
-                        type === 'embeds'
-                           ? [pages[page]]
-                           : pages[page],
+                     [type]: type === 'embeds' ? [pages[page]] : pages[page],
                      components: [row],
                      fetchReply: true,
                   });

@@ -1,4 +1,4 @@
-const Command = require('../structures/Command.js');
+const Command = require('../source/manegers/Command.js');
 
 class Help extends Command {
    constructor(client) {
@@ -11,10 +11,7 @@ class Help extends Command {
       });
 
       this.addStringOption((option) =>
-         option
-            .setName('command')
-            .setDescription('Command name for help.')
-            .setAutocomplete(true)
+         option.setName('command').setDescription('Command name for help.').setAutocomplete(true)
       );
    }
 
@@ -23,20 +20,14 @@ class Help extends Command {
 
       const focused = interaction.options.getFocused();
       const choices = commands.map((command) => command.name);
-      const filtered = choices.filter((choice) =>
-         choice.startsWith(focused)
-      );
-      await interaction.respond(
-         filtered.map((choice) => ({ name: choice, value: choice }))
-      );
+      const filtered = choices.filter((choice) => choice.startsWith(focused));
+      await interaction.respond(filtered.map((choice) => ({ name: choice, value: choice })));
    }
 
    async execute({ client, interaction }) {
       const input = interaction.options.getString('command');
       if (input) {
-         const command = client.commands.find(
-            (command) => command.name == input
-         );
+         const command = client.commands.find((command) => command.name == input);
          if (command) {
             const usage = command.help.usage
                ? `\n**Usage**\n</${command.name}:${command.id}> \`${command.help.usage}\`\n`
@@ -70,23 +61,14 @@ class Help extends Command {
       const list = commands
          .filter((command) => command.name != this.name)
          .map((command) => {
-            const usage = command.help.usage
-               ? ` \`${command.help.usage}\``
-               : '';
+            const usage = command.help.usage ? ` \`${command.help.usage}\`` : '';
 
             return `</${command.name}:${command.id}>${usage}\n${command.description}`;
          });
 
-      let pages = [];
-      let index = 0;
-      while (index < list.length) {
-         pages.push(list.slice(index, index + 10).join('\n\n'));
-         index += 10;
-      }
+      const pages = client.embed.pages(list);
 
-      const help = commands.find(
-         (command) => (command.name = this.name)
-      );
+      const help = commands.find((command) => (command.name = this.name));
 
       const embeds = pages.map((message, index) => {
          return client.embed.new({

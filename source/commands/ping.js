@@ -1,4 +1,4 @@
-const Command = require('../structures/Command.js');
+const Command = require('../source/manegers/Command.js');
 
 class Ping extends Command {
    constructor(client) {
