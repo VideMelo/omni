@@ -96,7 +96,7 @@ class Buttons {
                components: pages.length > 1 ? [row] : [],
                fetchReply: true,
             });
-            
+
             const collector = message.createMessageComponentCollector({
                componentType: Discord.ComponentType.Button,
                time: 30000,
@@ -166,6 +166,11 @@ class Buttons {
                      fetchReply: true,
                   });
                } catch (error) {}
+            });
+         } else {
+            await interaction.reply({
+               [type]: type === 'embeds' ? [pages[0]] : pages[0],
+               fetchReply: true,
             });
          }
       } catch (error) {

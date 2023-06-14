@@ -1,60 +1,47 @@
-const Discord = require('discord.js');
-
 class Song {
-   constructor(body, type = '') {
-      switch (type) {
-         case 'youtube':
-            this.youtube(body);
-            break;
-         case 'spotify':
-            this.spotify(body);
-            break;
-      }
+   constructor({ name, authors, thumbnail, duration, url, live = false, query, source, id }) {
+      this.source = source;
+      this.name = name;
+      this.authors = authors;
+      this.thumbnail = thumbnail;
+      this.duration =
+         source == 'youtube' ? this.MStoHMS(this.ISOtoMS(duration)) : this.MStoHMS(duration);
+      this.durationMS = source == 'youtube' ? this.ISOtoMS(duration) : duration;
+      this.url = url;
+      this.live = live;
+      this.query = query;
+      this.id = id;
    }
 
-   spotify(body) {
-      this.builder = 'spotify';
-      this.name = body.name;
-      const authors = body?.artists?.map((author) => author.name);
-      this.authors = [authors, ...body.artists];
-      this.thumbnail = body.album.images[2];
-      this.search = `${this.authors[1].name} - ${body.name} (Audio)`;
-      this.duration = this.MStoMIN(body.duration_ms);
-   }
-
-   youtube(body) {
-      this.builder = 'youtube';
-      this.name = body.snippet.title;
-      this.authors = [[body.snippet.channelTitle], { name: body.snippet.channelTitle }];
-      this.thumbnail = body.snippet.thumbnails.high;
-      this.duration = this.MStoMIN(this.ISOtoMS(body.contentDetails.duration));
-      this.url = `https://youtu.be/${body.id}`;
-   }
-
-   build({ url, author }) {
+   set({ url, author }) {
       this.author = author;
       if (url) this.url = url;
    }
 
-   MStoMIN(MS) {
+   MStoHMS(MS) {
       const sec = Math.floor((MS / 1000) % 60);
       const min = Math.floor((MS / 1000 / 60) % 60);
-      return `${min <= 9 ? `0${min}` : min}:${sec <= 9 ? `0${sec}` : sec}`;
+      const hrs = Math.floor((MS / 1000 / 60 / 60) % 24);
+
+      return `${hrs ? `${hrs}:` : ''}${min <= 9 ? `0${min}` : min}:${sec <= 9 ? `0${sec}` : sec}`;
    }
 
    ISOtoMS(ISO) {
       const regex = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/;
-      const match = regex.exec(ISO);
 
-      const hours = match[4] ? parseInt(match[4]) : 0;
-      const minutes = match[5] ? parseInt(match[5]) : 0;
-      const seconds = match[6] ? parseInt(match[6]) : 0;
+      let match;
+      if (!ISO.match(regex)) return NaN;
+      match = regex.exec(ISO);
 
-      const msHours = hours * 60 * 60 * 1000;
-      const msMinutes = minutes * 60 * 1000;
-      const msSeconds = seconds * 1000;
+      const hrs = match[4] ? parseInt(match[4]) : 0;
+      const min = match[5] ? parseInt(match[5]) : 0;
+      const sec = match[6] ? parseInt(match[6]) : 0;
 
-      return msHours + msMinutes + msSeconds;
+      const msHrs = hrs * 60 * 60 * 1000;
+      const msMin = min * 60 * 1000;
+      const msSec = sec * 1000;
+
+      return msHrs + msMin + msSec;
    }
 }
 

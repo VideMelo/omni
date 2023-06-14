@@ -19,4 +19,5 @@ class Join extends Command {
       );
    }
 }
+
 module.exports = Join;

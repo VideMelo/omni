@@ -1,4 +1,4 @@
-const Command = require('../source/manegers/Command.js');
+const Command = require('../manegers/Command.js');
 
 const Discord = require('discord.js');
 
@@ -49,16 +49,19 @@ class Play extends Command {
          let search;
          try {
             search = await client.player.search.list(input);
-         } catch {
-            interaction.replyErro('An error occurred while searching, please try again later.');
+         } catch (error) {
+            client.log.erro(error);
+            return interaction.replyErro(
+               'An error occurred while searching, please try again later.'
+            );
          }
 
          if (search) {
-            if (search?.length > 1) {
-               const results = search.map((result, index) => {
+            if (search.type == 'search') {
+               const results = search.songs.map((result, index) => {
                   return {
                      label: `${result.name}`,
-                     description: result.authors[0].join(', '),
+                     description: result.authors.map((author) => author.name).join(', '),
                      value: `${index}`,
                   };
                });
@@ -75,18 +78,10 @@ class Play extends Command {
                   componentType: Discord.ComponentType.StringSelect,
                   time: 30000,
                });
-
                collector.on('collect', async (collect) => {
-                  const song = await client.player.search.result(
-                     search[parseInt(collect.values[0])],
-                     collect
-                  );
-                  await interaction.editReply({
-                     content: '<a:loading:1075548283591733248>  loading...',
-                     components: [],
-                  });
+                  const song = search.songs[parseInt(collect.values[0])];
 
-                  await client.player.queue.new(song);
+                  await collect.deferReply();
 
                   await client.player.play(song, {
                      guild: interaction.channel.guild.id,
@@ -94,23 +89,41 @@ class Play extends Command {
                      member: interaction.user,
                      interaction,
                   });
-                  collector.stop();
+
+                  await collector.stop();
+                  await collect.deleteReply();
                });
 
                collector.on('end', async () => {
                   await interaction.deleteReply();
                });
-            } else {
-               search = search[0] || search;
-               client.player.queue.new(search);
-
-               client.player.play(search, {
+            } else if (search.type == 'track') {
+               await client.player.play(search[0] || search, {
                   guild: interaction.channel.guild.id,
                   voice: interaction.member.voice.channel.id,
                   member: interaction.user,
                   interaction,
                });
                await interaction.deleteReply();
+            } else if (search.type == 'list') {
+               await client.player.set(
+                  interaction.channel.guild.id,
+                  interaction.member.voice.channel.id,
+                  interaction
+               );
+               await client.player.queue.new(search, {
+                  member: interaction.user,
+                  type: 'list',
+               });
+               await interaction.deleteReply();
+               if (client.player.state == 'idle' || client.player.queue.current == 0) {
+                  const starter = client.player.queue.list.find(
+                     (song) => (song.id = search.starter)
+                  );
+                  return await client.player.play(starter);
+               }
+            } else {
+               return await interaction.replyErro('Unable to execute this command.');
             }
          } else {
             return await interaction.replyErro('No tracks found.');

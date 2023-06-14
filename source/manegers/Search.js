@@ -1,129 +1,80 @@
-const Song = require('./Song');
-const { google } = require('googleapis');
-
-const SpotifyWebApi = require('spotify-web-api-node');
+const Spotify = require('./Spotify');
+const Youtube = require('./Youtube');
 
 class Search {
    constructor(client, player) {
-      this.spotify = {
-         async api(id, secret) {
-            const spotify = new SpotifyWebApi({
-               clientId: id || client.config.SPOTIFY_ID,
-               clientSecret: secret || client.config.SPOTIFY_SECRET,
-            });
-
-            const response = await spotify.clientCredentialsGrant();
-            spotify.setAccessToken(response.body['access_token']);
-            return spotify;
-         },
-         url: {
-            playlist: /s/,
-            track: /s/,
-         },
-      };
-
-      this.youtube = {
-         api(key) {
-            const youtube = google.youtube('v3');
-            google.options({
-               auth: key || client.config.YOUTUBE_KEY,
-            });
-
-            return youtube;
-         },
-         async search(input, results = 1, part = 'id', ...options) {
-            return await this.api().search.list({
-               maxResults: results,
-               part: part,
-               q: input,
-               ...options,
-            });
-         },
-         url: {
-            playlist:
-               /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be))(\/playlist\?list=)([\w\-]+)(\S+)?$/gm,
-            track: /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/gm,
-         },
-      };
+      this.spotify = new Spotify(client);
+      this.youtube = new Youtube(client);
    }
 
-   async list(input) {
+   async list(input, options = {}) {
       try {
-         if (this.url(input)) {
-            const info = this.url(input);
+         if (this.isUrl(input)) {
+            const info = this.infoUrl(input);
             switch (info.stream) {
-               case 'youtube':
-                  switch (info.type) {
-                     case 'playlist':
-                        break;
-                     case 'track':
-                        const res = await this.youtube.api().videos.list({
-                           part: 'snippet,contentDetails',
-                           id: info.id,
-                        });
-                        return new Song(res.data.items[0], 'youtube');
-                  }
-                  break;
                case 'spotify':
                   switch (info.type) {
                      case 'playlist':
-                        break;
+                        const playlist = await this.spotify.getPlaylist(info.id, {
+                           page: options?.page || 1,
+                        });
+                        return this.result(playlist, 'list', playlist.songs[0].id);
                      case 'track':
-                        break;
+                        return this.result(await this.spotify.getTrack(info.id), 'track');
                   }
             }
+         } else {
+            return this.result(await this.spotify.search(input), 'search');
          }
-         const spotify = await this.spotify.api();
-
-         const search = await spotify.searchTracks(input, {
-            limit: 5,
-         });
-         if (search.body.tracks.total == 0) return;
-         return search.body.tracks.items.map((track) => {
-            return new Song(track, 'spotify');
-         });
       } catch (error) {
          throw new Error(error);
       }
    }
 
-   async result(song) {
-      if (song.builder == 'spotify') {
-         let spotify = await this.spotify.api();
-         let author = await spotify.getArtist(song.authors[1].id);
-         let res = await this.youtube.search(song.search);
-         song.build({
-            url: `https://youtu.be/${res.data.items[0].id.videoId}`,
-            author: author,
-         });
-      } else if (song.builder == 'youtube') {
-         song.build({
-            author: authors[0],
-         });
+   async getUrl(track) {
+      try {
+         const id = await this.youtube.getId(track.query);
+         return `https://youtu.be/${id}`;
+      } catch (error) {
+         throw new Error(error);
       }
-
-      return song;
    }
 
-   url(url) {
+   result(body, type, starter) {
+      return {
+         type,
+         starter,
+         ...body,
+      };
+   }
+
+   isUrl(url) {
       const isUrl =
-         /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/gm;
+         /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/g;
 
-      if (!url.match(isUrl)) return;
+      if (!url.match(isUrl)) return false;
+      return true;
+   }
 
-      if (url.match(this.youtube.url.playlist)) {
-         const regex = this.youtube.url.playlist.exec(url);
+   infoUrl(url) {
+      if (this.spotify.urls.pattern.test(url)) {
+         this.spotify.urls.pattern.test(url);
+         const match = this.spotify.urls.pattern.exec(url);
+
          return {
-            stream: 'youtube',
-            type: 'playlist',
-            id: regex[5],
+            stream: 'spotify',
+            type: match[1],
+            id: match[2],
          };
-      } else if (url.match(this.youtube.url.track)) {
-         const regex = this.youtube.url.track.exec(url);
+      }
+      if (this.youtube.urls.pattern.test(url)) {
+         url.match(this.youtube.urls.pattern);
+         const match = this.youtube.urls.pattern.exec(url);
+
          return {
             stream: 'youtube',
-            type: 'track',
-            id: regex[5],
+            type: match[6] ? 'playlist' : 'track',
+            id: match[6] ? match[7] : match[3],
          };
       }
    }

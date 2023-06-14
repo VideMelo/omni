@@ -1,4 +1,4 @@
-const Command = require('../source/manegers/Command.js');
+const Command = require('../manegers/Command.js');
 
 class Leave extends Command {
    constructor(client) {
