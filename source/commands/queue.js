@@ -10,7 +10,7 @@ class Queue extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.Manager.get(interaction.guild.id);
+         const player = client.manager.get(interaction.guild.id);
          if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
          const tracks = player.queue.list.map((track) => {

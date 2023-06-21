@@ -2,7 +2,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const { google } = require('googleapis');
 
 class Search {
-   constructor(client) {
+   constructor(client, player) {
       this.spotify = new Spotify(client);
       this.youtube = new Youtube(client);
    }

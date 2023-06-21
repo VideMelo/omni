@@ -10,7 +10,6 @@ const Logger = require('../util/logger');
 const Button = require('../modules/button');
 const Embed = require('../modules/embed');
 
-const Player = require('../managers/Player');
 
 class Bot extends Discord.Client {
    constructor() {
@@ -32,9 +31,7 @@ class Bot extends Discord.Client {
       this.button = new Button(this);
       this.embed = new Embed(this);
 
-      this.Manager = new Discord.Collection();
-
-      this.player = new Player(this);
+      this.manager = new Discord.Collection();
 
       this.LoadEvents();
       this.LoadCommands();
@@ -122,17 +119,9 @@ class Bot extends Discord.Client {
       }
    }
 
-   async LoadGuilds() {
-      const guilds = await this.guilds.fetch();
-      guilds.forEach((guild) => {
-         this.Manager.set(guild.id, new Player(this));
-      });
-   }
-
    async build() {
       try {
          this.login(this.config.DISCORD_TOKEN);
-         this.LoadGuilds();
       } catch (err) {
          console.error(err);
       }

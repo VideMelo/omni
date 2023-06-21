@@ -6,7 +6,7 @@ const { EventEmitter } = require('events');
 const { Result, Track } = require('./Search');
 
 class Queue extends EventEmitter {
-   constructor(player) {
+   constructor(client, player) {
       super();
       this.player = player;
 

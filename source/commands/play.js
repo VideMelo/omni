@@ -29,7 +29,7 @@ class Play extends Command {
 
          await interaction.deferReply({ ephemeral: true });
 
-         const player = client.Manager.get(interaction.guild.id);
+         const player = client.manager.get(interaction.guild.id);
          const input = interaction.options.getString('input');
 
          let search;

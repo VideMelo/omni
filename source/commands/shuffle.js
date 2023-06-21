@@ -10,7 +10,7 @@ class Shuffle extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.Manager.get(interaction.guild.id);
+         const player = client.manager.get(interaction.guild.id);
 
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');

@@ -15,7 +15,6 @@ const { Search, Result, Track } = require('./Search');
 class Player extends EventEmitter {
    constructor(client) {
       super();
-      this.client = client;
       this.manager = createAudioPlayer();
 
       this.queue = new Queue(client, this);
@@ -166,8 +165,6 @@ class Player extends EventEmitter {
     * @param {Discord.Message} metadata.message The message where the track was requested
     * @param {Discord.VoiceChannel} metadata.channel The voice channel where the track was requested
     * @param {Discord.Guild} metadata.guild The guild where the track was requested
-    * @param {Discord.GuildMember} metadata.requester The member who requested the track
-    * @returns {Promise<void>}
     * @example
     * player.play('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
     *   voice: message.member.voice.channel,
@@ -180,18 +177,17 @@ class Player extends EventEmitter {
       try {
          // Check if the track is valid
          if (!track) return;
-         if (track instanceof Track) if (!track?.url) track.set({ url: await this.search.getUrl(track) });
-         else if (track instanceof Result) track = track.type == 'search' ? track.tracks[0] : track;
-         else if (typeof track == 'string') {
+         if (track instanceof Result) track = track.type == 'search' ? track.tracks[0] : track;
+         if (track instanceof Track)
+            if (!track?.url) track.set({ url: await this.search.getUrl(track) });
+         if (typeof track == 'string') {
             const search = await this.search.track(track);
             track = search.tracks[0];
-         } else return;
+         }
 
-         // Set state
-         let state = metadata?.state || this.queue.state;
+         let state = metadata?.state || this.queue.state; // set state
 
-         
-         // Check if the player is already playing
+         // Add the queue only if the state is different from "update"
          if (state != 'update') {
             this.queue.data({ ...metadata });
             track = this.queue.new(track, {
@@ -199,13 +195,12 @@ class Player extends EventEmitter {
                type: track?.type,
             });
          }
-         // Get the track url
-         if (!track?.url) track.set({ url: await this.search.getUrl(track) });
 
-         if (state == 'playing') return;
+         if (state == 'playing') return; // If the state is playing, return
 
-         // Set the current track
-         this.queue.current = track;
+         if (!track?.url) track.set({ url: await this.search.getUrl(track) }); // Set the track url if not defined
+
+         this.queue.current = track; // Set the current track
 
          // Create a new stream with the track url
          const stream = await ytdl(track.url, {
@@ -243,6 +238,14 @@ class Player extends EventEmitter {
       } catch (erro) {
          throw new Error(erro);
       }
+   }
+
+   static async init(client) {
+      if (!client.manager instanceof Discord.Collection) throw new Error('Manager must be a Collection!');
+      const guilds = await client.guilds.fetch();
+      guilds.forEach((guild) => {
+         client.manager.set(guild.id, new Player(client));
+      });
    }
 }
 

@@ -10,7 +10,7 @@ class pause extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.Manager.get(interaction.guild.id);
+         const player = client.manager.get(interaction.guild.id);
          if (
             !client.voice.adapters.get(interaction.guild.id) ||
             !interaction.guild.members.me?.voice?.channel
