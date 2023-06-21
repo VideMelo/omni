@@ -10,7 +10,7 @@ const { Stream } = require('stream');
 const { EventEmitter } = require('events');
 
 const Queue = require('./Queue');
-const Search = require('./Search');
+const { Search, Result, Track } = require('./Search');
 
 class Player extends EventEmitter {
    constructor(client) {
@@ -28,7 +28,7 @@ class Player extends EventEmitter {
          if (this.queue.idle()) {
             this.manager.stop();
             this.queue.list.clear();
-            return this.queue.metadata.voice.disconnect();
+            return this.queue.metadata.connection.disconnect();
          }
          this.play(this.queue.next(), { state: 'update' });
       });
@@ -156,55 +156,92 @@ class Player extends EventEmitter {
       });
    }
 
+   /**
+    * Play a track
+    * @param {Track|Result|string} track The track to play
+    * @param {object} metadata The metadata
+    * @param {string} metadata.state The state of the player
+    * @param {Discord.GuildMember} metadata.requester The member who requested the track
+    * @param {Discord.TextChannel} metadata.channel The channel where the track was requested
+    * @param {Discord.Message} metadata.message The message where the track was requested
+    * @param {Discord.VoiceChannel} metadata.channel The voice channel where the track was requested
+    * @param {Discord.Guild} metadata.guild The guild where the track was requested
+    * @param {Discord.GuildMember} metadata.requester The member who requested the track
+    * @returns {Promise<void>}
+    * @example
+    * player.play('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
+    *   voice: message.member.voice.channel,
+    *   requester: message.member,
+    *   channel: message.channel,
+    *   message: message,
+    * });
+    */
    async play(track, metadata = {}) {
       try {
+         // Check if the track is valid
          if (!track) return;
+         if (track instanceof Track) if (!track?.url) track.set({ url: await this.search.getUrl(track) });
+         else if (track instanceof Result) track = track.type == 'search' ? track.tracks[0] : track;
+         else if (typeof track == 'string') {
+            const search = await this.search.track(track);
+            track = search.tracks[0];
+         } else return;
 
-         metadata.state = metadata?.state || this.queue.state;
+         // Set state
+         let state = metadata?.state || this.queue.state;
 
-         if (metadata.state != 'update') {
+         
+         // Check if the player is already playing
+         if (state != 'update') {
             this.queue.data({ ...metadata });
             track = this.queue.new(track, {
                requester: metadata?.requester,
                type: track?.type,
             });
          }
+         // Get the track url
+         if (!track?.url) track.set({ url: await this.search.getUrl(track) });
 
-         if (metadata.state == 'playing') return;
+         if (state == 'playing') return;
 
-         if (!track?.url) track.url = await this.search.getUrl(track);
-
+         // Set the current track
          this.queue.current = track;
 
+         // Create a new stream with the track url
          const stream = await ytdl(track.url, {
             highWaterMark: 1 << 25,
             filter: 'audioonly',
             quality: 'highestaudio',
          });
 
-         metadata.seek = metadata?.seek / 1000 || 0;
-         const bufferStream = new Stream.PassThrough();
+         let seek = metadata?.seek / 1000 || 0; // if seek is not defined, set to 0
+
+         const bufferStream = new Stream.PassThrough(); // buffer the stream
+
+         // Edit the stream
          const reStream = fluentFfmpeg({ source: stream })
             .setFfmpegPath(ffmpegPath)
             .format('opus')
-            .seekInput(metadata.seek)
+            .seekInput(seek)
             .on('error', (err) => {
                if (err instanceof Error && err?.message?.includes('Premature close')) return;
                console.error(err);
             })
             .stream(bufferStream);
 
+         // Create a new resource with the edited stream
          const resource = createAudioResource(reStream, {
             inlineVolume: true,
          });
 
-         resource.volume.setVolume(this.queue.config.volume);
+         resource.volume.setVolume(this.queue.config.volume); // Set the volume
 
-         this.queue.metadata.voice.subscribe(this.manager);
-         this.manager.play(resource);
-         this.queue.state = 'playing';
+         this.queue.metadata.connection.subscribe(this.manager); // Subscribe connection to the manager
+
+         this.manager.play(resource); // Play the resource
+         this.queue.state = 'playing'; // Set the state to playing
       } catch (erro) {
-         return console.error(erro);
+         throw new Error(erro);
       }
    }
 }

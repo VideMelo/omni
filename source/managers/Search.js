@@ -7,6 +7,17 @@ class Search {
       this.youtube = new Youtube(client);
    }
 
+   /**
+    * Get a serach result from query input
+    * @param {String} input - String query or url
+    * @param {Object} options - Options for search
+    * @returns {Result} Result
+    * @throws {Error} Error
+    * @example
+    * const result = await search.list('You - Dontoliver');
+    * console.log(result);
+    * // Result { type: 'search', tracks: [ Tracks, ... ] }
+    */
    async list(input, options = {}) {
       if (this.isUrl(input)) {
          const info = this.infoUrl(input);
@@ -28,6 +39,12 @@ class Search {
       }
    }
 
+   /**
+    * Get a track from query input
+    * @param {String} input - String query or url
+    * @param {Object} options - Options for search
+    * @returns {String} Url
+    */
    async getUrl(track) {
       try {
          const id = await this.youtube.getId(track.query);
@@ -246,6 +263,8 @@ class Track {
       this.duration = duration;
       this.time = this.MStoHMS(duration);
       this.url = url;
+      this.requester = {};
+      this.index;
       this.live = live;
       this.query = query;
       this.id = id;
@@ -267,4 +286,10 @@ class Track {
    }
 }
 
-module.exports = Search;
+module.exports = {
+   Search,
+   Result,
+   Spotify,
+   Youtube,
+   Track,
+};
