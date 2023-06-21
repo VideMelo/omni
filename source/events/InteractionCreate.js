@@ -1,4 +1,4 @@
-const Event = require('../manegers/Event.js');
+const Event = require('../managers/Event.js');
 const { PermissionFlagsBits } = require('discord.js');
 
 class InteractionCreate extends Event {
@@ -15,10 +15,11 @@ class InteractionCreate extends Event {
             await interaction.deleteReply();
          };
 
-         interaction.replyErro = async function (message) {
+         interaction.replyErro = async function (message, options = {}) {
             const Embed = client.embed.new({
                description: message,
                color: 'BA3737',
+               ...options,
             });
 
             try {

@@ -10,9 +10,9 @@ const Logger = require('../util/logger');
 const Button = require('../modules/button');
 const Embed = require('../modules/embed');
 
-const Player = require('../manegers/Player');
+const Player = require('../managers/Player');
 
-class Blob extends Discord.Client {
+class Bot extends Discord.Client {
    constructor() {
       super({
          intents: [
@@ -32,6 +32,8 @@ class Blob extends Discord.Client {
       this.button = new Button(this);
       this.embed = new Embed(this);
 
+      this.Manager = new Discord.Collection();
+
       this.player = new Player(this);
 
       this.LoadEvents();
@@ -41,7 +43,7 @@ class Blob extends Discord.Client {
    }
 
    LoadEvents() {
-      const files = fs.readdirSync('./source/events')
+      const files = fs.readdirSync('./source/events');
       try {
          this.log.async('Started loading events:');
          files.forEach(async (file) => {
@@ -66,9 +68,7 @@ class Blob extends Discord.Client {
    }
 
    async LoadCommands() {
-      const files = fs
-         .readdirSync('./source/commands')
-         .filter((file) => file.endsWith('.js'));
+      const files = fs.readdirSync('./source/commands').filter((file) => file.endsWith('.js'));
       try {
          this.log.async('Started loading commands:');
          files.forEach(async (file) => {
@@ -122,13 +122,21 @@ class Blob extends Discord.Client {
       }
    }
 
+   async LoadGuilds() {
+      const guilds = await this.guilds.fetch();
+      guilds.forEach((guild) => {
+         this.Manager.set(guild.id, new Player(this));
+      });
+   }
+
    async build() {
       try {
          this.login(this.config.DISCORD_TOKEN);
+         this.LoadGuilds();
       } catch (err) {
          console.error(err);
       }
    }
 }
 
-module.exports = Blob;
+module.exports = Bot;

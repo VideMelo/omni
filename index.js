@@ -1,5 +1,5 @@
 // By VideMelo: https://github.com/videmelo :p
-const Blob = require('./source/client/Blob.js');
-const client = new Blob();
+const Bot = require('./source/client/Bot.js');
+const client = new Bot();
 
 client.build();

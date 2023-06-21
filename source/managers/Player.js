@@ -1,14 +1,13 @@
 const Discord = require('discord.js');
-const { EventEmitter } = require('events');
-const {
-   createAudioPlayer,
-   joinVoiceChannel,
-   createAudioResource,
-   AudioPlayerStatus,
-   StreamType,
-} = require('@discordjs/voice');
+const { createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
 
-const ytdl = require('ytdl-core-discord');
+const ytdl = require('ytdl-core');
+
+const fluentFfmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+const { Stream } = require('stream');
+const { EventEmitter } = require('events');
 
 const Queue = require('./Queue');
 const Search = require('./Search');
@@ -16,59 +15,50 @@ const Search = require('./Search');
 class Player extends EventEmitter {
    constructor(client) {
       super();
-      this.player = createAudioPlayer();
+      this.client = client;
+      this.manager = createAudioPlayer();
 
       this.queue = new Queue(client, this);
       this.search = new Search(client, this);
 
-      this.state = 'idle';
-
-      this.voice;
-      this.guild;
-      this.channel;
-
       this.message;
-      this.member;
 
-      this.player.on('error', (error) => {
-         client.log.erro(error.message);
+      this.manager.on(AudioPlayerStatus.Idle, () => {
+         this.queue.state = 'idle';
+         if (this.queue.idle()) {
+            this.manager.stop();
+            this.queue.list.clear();
+            return this.queue.metadata.voice.disconnect();
+         }
+         this.play(this.queue.next(), { state: 'update' });
       });
 
-      this.player.on(AudioPlayerStatus.Playing, async () => {
-         const song = this.queue.current;
-         const color = await client.embed.color(song.thumbnail);
+      this.manager.on(AudioPlayerStatus.Playing, async () => {
+         if (!this.queue.metadata.channel) return;
+         const track = this.queue.current;
+         const color = await client.embed.color(track.thumbnail);
 
          const Embed = client.embed.new({
             color: color?.Vibrant?.hex ?? color,
             author: {
                name: 'Now Playing!',
             },
-            thumbnail: song?.thumbnail ?? null,
-            title: `${song.name.length > 36 ? `${song.name.slice(0, 36)}...` : song.name}`,
-            description: `${song.authors.map((author) => author.name).join(', ')}`,
+            thumbnail: track?.thumbnail ?? null,
+            title: `${track.name.length > 36 ? `${track.name.slice(0, 36)}...` : track.name}`,
+            description: `${track.authors.map((author) => author.name).join(', ')}`,
          });
 
          try {
-            const last = this.message;
-            const message = await this.channel.send({
+            const last = this.queue.metadata.message;
+            const message = await this.queue.metadata.channel.send({
                embeds: [Embed],
                components: [],
             });
-            this.message = message;
+            this.queue.metadata.message = message;
             await last?.delete();
          } catch (error) {
             client.log.erro(error);
          }
-      });
-
-      this.player.on(AudioPlayerStatus.Idle, () => {
-         this.state = 'idle';
-         if (this.queue.idle()) {
-            this.player.stop();
-            this.queue.list.clear();
-            return this.voice.disconnect();
-         }
-         this.play(this.queue.next());
       });
 
       this.queue.on('new', async (body, type) => {
@@ -79,7 +69,7 @@ class Player extends EventEmitter {
                const Embed = client.embed.new({
                   color: color?.Vibrant?.hex ?? color,
                   author: {
-                     name: 'New Song!',
+                     name: 'New track!',
                   },
                   thumbnail: body?.thumbnail ?? null,
                   title: `${body.name.length > 36 ? `${body.name.slice(0, 36)}...` : body.name}`,
@@ -87,7 +77,7 @@ class Player extends EventEmitter {
                   fields: [
                      {
                         name: 'Duration',
-                        value: body.duration,
+                        value: body.time,
                         inline: true,
                      },
                      {
@@ -103,7 +93,7 @@ class Player extends EventEmitter {
                   ],
                });
 
-               await this.channel.send({
+               await this.queue.metadata.channel.send({
                   embeds: [Embed],
                });
             }
@@ -117,7 +107,7 @@ class Player extends EventEmitter {
                },
                thumbnail: body?.thumbnail ?? null,
                title: `${body.name.length > 36 ? `${body.name.slice(0, 36)}...` : body.name}`,
-               description: `Added **${body.songs.length}** tracks!`,
+               description: `Added **${body.tracks.length}** tracks!`,
             });
 
             const next = client.button.primary('next', 'Load Next Page', { style: 1 });
@@ -126,7 +116,7 @@ class Player extends EventEmitter {
                .setDisabled(true);
             const row = client.button.row([next, pages]);
 
-            const message = await this.channel.send({
+            const message = await this.queue.metadata.channel.send({
                embeds: [Embed],
                components: [row],
             });
@@ -166,63 +156,56 @@ class Player extends EventEmitter {
       });
    }
 
-   set(guild, voice, interaction) {
-      this.voice = this.connect(voice, guild, interaction);
-      this.guild = guild;
-      this.channel = interaction.channel;
-   }
-
-   async play(song, { interaction, guild, voice, member, state } = {}) {
+   async play(track, metadata = {}) {
       try {
-         if (!song?.url) song.url = await this.search.getUrl(song);
-         if (voice) {
-            this.set(guild, voice, interaction);
-            song = this.queue.new(song, { member });
+         if (!track) return;
+
+         metadata.state = metadata?.state || this.queue.state;
+
+         if (metadata.state != 'update') {
+            this.queue.data({ ...metadata });
+            track = this.queue.new(track, {
+               requester: metadata?.requester,
+               type: track?.type,
+            });
          }
 
-         state = state || this.state;
-         if (state == 'playing') return;
+         if (metadata.state == 'playing') return;
 
-         this.queue.current = song;
+         if (!track?.url) track.url = await this.search.getUrl(track);
 
-         const stream = await ytdl(song.url, {
+         this.queue.current = track;
+
+         const stream = await ytdl(track.url, {
+            highWaterMark: 1 << 25,
             filter: 'audioonly',
             quality: 'highestaudio',
-            highWaterMark: 1 << 25,
          });
 
-         const resource = createAudioResource(stream, {
-            inputType: StreamType.Opus,
+         metadata.seek = metadata?.seek / 1000 || 0;
+         const bufferStream = new Stream.PassThrough();
+         const reStream = fluentFfmpeg({ source: stream })
+            .setFfmpegPath(ffmpegPath)
+            .format('opus')
+            .seekInput(metadata.seek)
+            .on('error', (err) => {
+               if (err instanceof Error && err?.message?.includes('Premature close')) return;
+               console.error(err);
+            })
+            .stream(bufferStream);
+
+         const resource = createAudioResource(reStream, {
             inlineVolume: true,
          });
 
-         resource.volume.setVolume(0.3);
+         resource.volume.setVolume(this.queue.config.volume);
 
-         this.voice.subscribe(this.player);
-         this.player.play(resource);
-         this.state = 'playing';
+         this.queue.metadata.voice.subscribe(this.manager);
+         this.manager.play(resource);
+         this.queue.state = 'playing';
       } catch (erro) {
          return console.error(erro);
       }
-   }
-
-   pause() {
-      this.player.pause();
-      this.state = 'paused';
-   }
-
-   unpause() {
-      this.player.unpause();
-      this.state = 'playing';
-   }
-
-   connect(voice, guild, interaction) {
-      const connection = joinVoiceChannel({
-         channelId: voice,
-         guildId: guild,
-         adapterCreator: interaction.channel.guild.voiceAdapterCreator,
-      });
-      return connection;
    }
 }
 
