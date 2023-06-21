@@ -1,21 +1,20 @@
 const Command = require('../managers/Command.js');
 
-class pause extends Command {
+class Volume extends Command {
    constructor(client) {
       super(client, {
-         name: 'pause',
-         description: 'Pause current track!',
+         name: 'volume',
+         description: 'Change the volume!',
       });
+
+      this.addIntegerOption((option) =>
+         option.setName('volume').setDescription('Volume').setRequired(true)
+      );
    }
 
    async execute({ client, interaction }) {
       try {
          const player = client.Manager.get(interaction.guild.id);
-         if (
-            !client.voice.adapters.get(interaction.guild.id) ||
-            !interaction.guild.members.me?.voice?.channel
-         )
-            return await interaction.replyErro("I'm not on any voice channels");
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -27,12 +26,16 @@ class pause extends Command {
             return await interaction.replyErro('You need to be on the same voice channel as me.');
          if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
-         await interaction.noReply();
-         player.queue.pause();
+         const volume = interaction.options.getInteger('volume');
+         if (volume < 0 || volume > 100)
+            return await interaction.replyErro('Volume must be between 0 and 100');
+
+         player.queue.volume(volume / 100);
+         await interaction.reply(`Volume: \`${volume}%\``);
       } catch (error) {
          throw new Error(error);
       }
    }
 }
 
-module.exports = pause;
+module.exports = Volume;

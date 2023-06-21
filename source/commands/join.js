@@ -1,4 +1,4 @@
-const Command = require('../manegers/Command.js');
+const Command = require('../managers/Command.js');
 
 class Join extends Command {
    constructor(client) {
@@ -9,14 +9,19 @@ class Join extends Command {
    }
 
    async execute({ client, interaction }) {
-      if (!interaction.member?.voice?.channel)
-         return await interaction.reply('You must join a voice channel first.');
-      interaction.noReply();
-      client.player.connect(
-         interaction.member.voice.channel.id,
-         interaction.channel.guild.id,
-         interaction
-      );
+      try {
+         const player = client.Manager.get(interaction.guild.id);
+         if (!interaction.member?.voice?.channel)
+            return await interaction.replyErro('You must join a voice channel first.');
+         interaction.noReply();
+         player.queue.connect(
+            interaction.member.voice.channel.id,
+            interaction.channel.guild.id,
+            interaction
+         );
+      } catch (error) {
+         throw new Error(error);
+      }
    }
 }
 

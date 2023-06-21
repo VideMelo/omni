@@ -1,21 +1,22 @@
 const Command = require('../managers/Command.js');
 
-class pause extends Command {
+class Remove extends Command {
    constructor(client) {
       super(client, {
-         name: 'pause',
-         description: 'Pause current track!',
+         name: 'remove',
+         description: 'Remove a track from the queue!',
+         exemple: '1',
+         usage: '<index>',
       });
+
+      this.addIntegerOption((option) =>
+         option.setName('index').setDescription('Index of the track to remove').setRequired(true)
+      );
    }
 
    async execute({ client, interaction }) {
       try {
          const player = client.Manager.get(interaction.guild.id);
-         if (
-            !client.voice.adapters.get(interaction.guild.id) ||
-            !interaction.guild.members.me?.voice?.channel
-         )
-            return await interaction.replyErro("I'm not on any voice channels");
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -27,12 +28,20 @@ class pause extends Command {
             return await interaction.replyErro('You need to be on the same voice channel as me.');
          if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
-         await interaction.noReply();
-         player.queue.pause();
+         const index = interaction.options.getInteger('index');
+         if (index > player.queue.list.size)
+            return await interaction.replyErro(
+               "You can't remove a track that hasn't been added yet."
+            );
+
+         const track = player.queue.remove(index);
+         if (track) {
+            return await interaction.reply(`Removed \`${track.name}\` from the queue.`);
+         }
       } catch (error) {
          throw new Error(error);
       }
    }
 }
 
-module.exports = pause;
+module.exports = Remove;
