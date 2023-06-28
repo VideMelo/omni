@@ -1,5 +1,5 @@
-const Event = require('../managers/Event.js');
-const Player = require('../managers/Player');
+const Event = require('../../managers/Event.js');
+const Player = require('../../managers/Player.js');
 
 class ClientReady extends Event {
    constructor() {
@@ -9,7 +9,7 @@ class ClientReady extends Event {
    async execute(client, interaction) {
       await Player.init(client);
       client.application.commands.fetch();
-      client.log.info(`Ready! Logged in as ${interaction.user.username}`);
+      client.log.info(`Ready! Logged in as: ${interaction.user.username}`);
    }
 }
 

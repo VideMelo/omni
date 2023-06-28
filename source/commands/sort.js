@@ -1,21 +1,17 @@
 const Command = require('../managers/Command.js');
 
-class Clear extends Command {
+class Sort extends Command {
    constructor(client) {
       super(client, {
-         name: 'clear',
-         description: 'Clear the queue!',
+         name: 'sort',
+         description: 'Sort the queue!',
       });
    }
 
    async execute({ client, interaction }) {
       try {
          const queue = client.player.get(interaction.guild.id);
-         if (
-            !client.voice.adapters.get(interaction.guild.id) ||
-            !interaction.guild.members.me?.voice?.channel
-         )
-            return await interaction.replyErro("I'm not on any voice channels");
+
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -27,12 +23,13 @@ class Clear extends Command {
             return await interaction.replyErro('You need to be on the same voice channel as me.');
          if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
-         queue.clear();
-         return await interaction.reply('Queue cleared!');
+         queue.order();
+         queue.config.shuffle = false;
+         return await interaction.reply('Queue sorted!');
       } catch (error) {
          throw new Error(error);
       }
    }
 }
 
-module.exports = Clear;
+module.exports = Sort;

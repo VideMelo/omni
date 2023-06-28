@@ -14,7 +14,7 @@ class Skip extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -24,19 +24,19 @@ class Skip extends Command {
                interaction.member?.voice?.channel?.id
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
          let index = interaction.options.getInteger('to');
-         if (index > player.queue.list.size)
+         if (index > queue.list.size)
             return await interaction.replyErro(
                "You can't skip to a track that hasn't been added yet."
             );
 
-         if (player.queue.current.index == player.queue.list.size) index = 1;
+         if (queue.current.index == queue.list.size) index = 1;
          if (index) {
-            await player.play(player.queue.skip(index), { state: 'update' });
+            await queue.play(queue.skip(index), { state: 'update' });
          } else {
-            await player.play(player.queue.next(), { state: 'update' });
+            await queue.play(queue.next(), { state: 'update' });
          }
          return await interaction.reply('Skipped');
       } catch (error) {

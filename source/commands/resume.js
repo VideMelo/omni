@@ -1,10 +1,10 @@
 const Command = require('../managers/Command.js');
 
-class Clear extends Command {
+class Resume extends Command {
    constructor(client) {
       super(client, {
-         name: 'clear',
-         description: 'Clear the queue!',
+         name: 'resume',
+         description: 'Resume the current song!',
       });
    }
 
@@ -12,8 +12,8 @@ class Clear extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
          if (
-            !client.voice.adapters.get(interaction.guild.id) ||
-            !interaction.guild.members.me?.voice?.channel
+            !interaction.guild.members.me?.voice?.channel ||
+            !client.voice.adapters.get(interaction.guild.id)
          )
             return await interaction.replyErro("I'm not on any voice channels");
          if (!interaction.member?.voice?.channel)
@@ -22,17 +22,22 @@ class Clear extends Command {
          if (
             interaction.guild.members.me?.voice?.channel &&
             interaction.guild.members.me?.voice?.channel?.id !=
-               interaction.member?.voice?.channel?.id
+               interaction.member.voice?.channel?.id
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
-         queue.clear();
-         return await interaction.reply('Queue cleared!');
+         if (!queue.list.size) return await interaction.replyErro('there is nothing to resume.');
+         if (queue.state == 'playing')
+            return await interaction.replyErro('the queue is already playing!');
+         if (queue.state != 'paused')
+            return await interaction.replyErro('the queue is not paused!');
+
+         queue.unpause();
+         interaction.noReply();
       } catch (error) {
          throw new Error(error);
       }
    }
 }
 
-module.exports = Clear;
+module.exports = Resume;

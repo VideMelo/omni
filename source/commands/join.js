@@ -10,13 +10,13 @@ class Join extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
          interaction.noReply();
-         player.queue.connect(
-            interaction.member.voice.channel.id,
-            interaction.channel.guild.id,
+         queue.connect(
+            interaction.member.voice.channel,
+            interaction.channel.guild,
             interaction
          );
       } catch (error) {

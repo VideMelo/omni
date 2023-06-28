@@ -10,7 +10,7 @@ class pause extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (
             !client.voice.adapters.get(interaction.guild.id) ||
             !interaction.guild.members.me?.voice?.channel
@@ -25,10 +25,10 @@ class pause extends Command {
                interaction.member?.voice?.channel?.id
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
          await interaction.noReply();
-         player.queue.pause();
+         queue.pause();
       } catch (error) {
          throw new Error(error);
       }

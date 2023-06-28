@@ -10,21 +10,19 @@ class Queue extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
-         if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         const queue = client.player.get(interaction.guild.id);
+         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
-         const tracks = player.queue.list.map((track) => {
+         const tracks = queue.list.map((track) => {
             return `> **${track.index}.** ${track.name}\n> \`${track.authors[0].name}\``;
          });
 
          const pages = client.embed.pages(tracks);
-         const current = player.queue.list.get(player.queue.current.index);
+         const current = queue.list.get(queue.current.index);
          const next =
-            current.index == player.queue.list.size &&
-            player.queue.config.loop &&
-            !player.queue.config.shuffle
-               ? player.queue.list.get(1)
-               : player.queue.list.get(current.index + 1);
+            current.index == queue.list.size && queue.config.loop && !queue.config.shuffle
+               ? queue.list.get(1)
+               : queue.list.get(current.index + 1);
          const color = await client.embed.color(current.thumbnail);
          const embeds = pages.map((track, index) => {
             return client.embed.new({
@@ -40,7 +38,7 @@ class Queue extends Command {
                      name: 'Next',
                      value: next
                         ? `**${next.index}.** ${next.name}\n\`${next.authors[0].name}\``
-                        : player.queue.config.shuffle && player.queue.list.size > 1
+                        : queue.config.shuffle && queue.list.size > 1
                         ? 'The next track is shuffled.'
                         : 'No more tracks in the queue.',
                      inline: true,
@@ -51,7 +49,7 @@ class Queue extends Command {
                   },
                ],
                footer: {
-                  text: `Queue  •  ${player.queue.list.size} tracks, ${player.queue.time}`,
+                  text: `Queue  •  ${queue.list.size} tracks, ${queue.time}`,
                },
             });
          });

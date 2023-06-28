@@ -10,7 +10,7 @@ class Leave extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (
             !interaction.guild.members.me?.voice?.channel ||
             !client.voice.adapters.get(interaction.guild.id)
@@ -26,8 +26,7 @@ class Leave extends Command {
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
 
-         player.queue.pause();
-         player.queue.metadata.voice?.disconnect();
+         queue.disconnect();
          interaction.noReply();
       } catch (error) {
          throw new Error(error);

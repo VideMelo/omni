@@ -29,7 +29,9 @@ class Play extends Command {
 
          await interaction.deferReply({ ephemeral: true });
 
-         const player = client.manager.get(interaction.guild.id);
+         const player = client.player;
+         const queue = player.get(interaction.guild.id);
+         
          const input = interaction.options.getString('input');
 
          let search;
@@ -45,7 +47,7 @@ class Play extends Command {
 
          if (search) {
             if (search.type == 'search') {
-               const results = search.tracks.map((result, index) => {
+               const results = search.items.map((result, index) => {
                   return {
                      label: `${result.name}`,
                      description: result.authors.map((author) => author.name).join(', '),
@@ -68,11 +70,11 @@ class Play extends Command {
                });
 
                collector.on('collect', async (collect) => {
-                  const track = search.tracks[parseInt(collect.values[0])];
+                  const track = search.items[parseInt(collect.values[0])];
 
                   await collect.deferReply();
 
-                  await player.play(track, {
+                  await queue.play(track, {
                      voice: interaction.member.voice.channel,
                      guild: interaction.channel.guild,
                      requester: interaction.user,
@@ -87,7 +89,7 @@ class Play extends Command {
                   await interaction.deleteReply();
                });
             } else if (search.type == 'track') {
-               await player.play(search.tracks[0], {
+               await queue.play(search.items[0], {
                   voice: interaction.member.voice.channel,
                   guild: interaction.channel.guild,
                   requester: interaction.user,
@@ -95,7 +97,7 @@ class Play extends Command {
                });
                await interaction.deleteReply();
             } else if (search.type == 'list') {
-               await player.play(search, {
+               await queue.play(search, {
                   voice: interaction.member.voice.channel,
                   guild: interaction.channel.guild,
                   requester: interaction.user,

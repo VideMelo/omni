@@ -1,14 +1,23 @@
 const Discord = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 
-const { EventEmitter } = require('events');
+const { createAudioResource, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
 
-const { Result, Track } = require('./Search');
+const ytdl = require('ytdl-core');
 
-class Queue extends EventEmitter {
+const fluentFfmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+const { Stream } = require('stream');
+
+const { Result } = require('./Search');
+const Track = require('./Track');
+
+class Queue {
    constructor(client, player) {
-      super();
-      this.player = player;
+      this.node = player;
+
+      this.player = createAudioPlayer();
 
       this.list = new Discord.Collection();
       this.current = { index: 0 };
@@ -30,6 +39,24 @@ class Queue extends EventEmitter {
 
       this.duration = 0;
       this.time = 'no time';
+
+      this.player.on(AudioPlayerStatus.Idle, () => {
+         this.state = 'idle';
+         if (this.idle()) {
+            this.player.stop();
+            this.list.clear();
+            this.current = { index: 0 };
+            this.metadata.connection.destroy();
+            this.node.emit('idle');
+            return;
+         }
+         this.play(this.next(), { state: 'update' });
+      });
+
+      this.player.on(AudioPlayerStatus.Playing, () => {
+         this.state = 'playing';
+         this.node.emit('playing', this, this.current, client);
+      });
    }
 
    /**
@@ -43,7 +70,12 @@ class Queue extends EventEmitter {
          guildId: voice.guild.id,
          adapterCreator: voice.guild.voiceAdapterCreator,
       });
+      this.data({ connection });
       return connection;
+   }
+
+   disconnect() {
+      this.metadata.connection.destroy();
    }
 
    /**
@@ -55,8 +87,92 @@ class Queue extends EventEmitter {
       return (this.metadata = {
          ...this.metadata,
          ...metadata,
-         connection: this.connect(metadata.voice),
       });
+   }
+
+   /**
+    * Play a track
+    * @param {Track|Result|string} track The track to play
+    * @param {object} metadata The metadata
+    * @param {string} metadata.state The state of the player
+    * @param {Discord.GuildMember} metadata.requester The member who requested the track
+    * @param {Discord.TextChannel} metadata.channel The channel where the track was requested
+    * @param {Discord.Message} metadata.message The message where the track was requested
+    * @param {Discord.VoiceChannel} metadata.channel The voice channel where the track was requested
+    * @param {Discord.Guild} metadata.guild The guild where the track was requested
+    * @example
+    * queue.play('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
+    *   voice: message.member.voice.channel,
+    *   requester: message.member,
+    *   channel: message.channel,
+    *   message: message,
+    * });
+    */
+   async play(track, metadata = {}) {
+      try {
+         // Check if the track is valid
+         if (!track) return;
+         if (track instanceof Result) track = track.type == 'search' ? track.tracks[0] : track;
+         if (track instanceof Track)
+            if (!track?.url) track.set({ url: await this.node.search.getUrl(track) });
+         if (typeof track == 'string') {
+            const search = await this.node.search.track(track);
+            track = search.tracks[0];
+         }
+
+         let state = metadata?.state || this.state; // set state
+
+         // Add the queue only if the state is different from "update"
+         if (state != 'update') {
+            this.data({ ...metadata, connection: this.connect(metadata.voice) });
+            track = this.new(track, {
+               requester: metadata?.requester,
+               type: track?.type,
+            });
+         }
+
+         if (state == 'playing') return; // If the state is playing, return
+
+         if (!track?.url) track.set({ url: await this.node.search.getUrl(track) }); // Set the track url if not defined
+
+         this.current = track; // Set the current track
+
+         // Create a new stream with the track url
+         const stream = await ytdl(track.url, {
+            highWaterMark: 1 << 25,
+            filter: 'audioonly',
+            quality: 'highestaudio',
+         });
+
+         let seek = metadata?.seek / 1000 || 0; // if seek is not defined, set to 0
+
+         const bufferStream = new Stream.PassThrough(); // buffer the stream
+
+         // Edit the stream
+         const reStream = fluentFfmpeg({ source: stream })
+            .setFfmpegPath(ffmpegPath)
+            .format('opus')
+            .seekInput(seek)
+            .on('error', (err) => {
+               if (err instanceof Error && err?.message?.includes('Premature close')) return;
+               console.error(err);
+            })
+            .stream(bufferStream);
+
+         // Create a new resource with the edited stream
+         const resource = createAudioResource(reStream, {
+            inlineVolume: true,
+         });
+
+         resource.volume.setVolume(this.config.volume); // Set the volume
+
+         this.metadata.connection.subscribe(this.player); // Subscribe connection to the manager
+
+         this.player.play(resource); // Play the resource
+         this.state = 'playing'; // Set the state to playing
+      } catch (erro) {
+         throw new Error(erro);
+      }
    }
 
    /**
@@ -70,22 +186,24 @@ class Queue extends EventEmitter {
       let track;
       if (options.type == 'list') {
          body = { ...body, requester: options?.requester };
-         body.tracks.forEach((track) => {
+         body.items.forEach((track) => {
             track.set({
                index: this.list.size + 1,
+               order: this.list.size + 1,
                requester: options?.requester,
             });
             this.list.set(this.list.size + 1, track);
          });
-         this.emit('new', body, options.type);
+         this.node.emit('newList', this, body.data);
          track = this.list.find((track) => body.starter == track.id);
       } else if (options.type == 'track' || options.type == 'search') {
          body.set({
             index: this.list.size + 1,
+            order: this.list.size + 1,
             requester: options?.requester,
          });
          this.list.set(this.list.size + 1, body);
-         this.emit('new', this.list.get(body.index), options.type);
+         this.node.emit('newTrack', this, body);
          track = body;
       }
 
@@ -99,6 +217,7 @@ class Queue extends EventEmitter {
     */
    next() {
       if (this.idle()) return null;
+      if (this.config.repeat) return this.current;
       if (this.current.index == this.list.size) {
          if (this.config.loop) {
             if (this.config.shuffle) {
@@ -172,6 +291,8 @@ class Queue extends EventEmitter {
       tracks.forEach((track) => {
          this.list.set(this.list.size + 1, track);
       });
+      this.update();
+      return this.list;
    }
 
    /**
@@ -203,16 +324,16 @@ class Queue extends EventEmitter {
     * @param {number} time - seek time in milliseconds
     */
    seek(time = 0) {
-      this.player.play(this.current, { state: 'update', seek: time });
+      this.play(this.current, { state: 'update', seek: time });
    }
 
    pause() {
-      this.player.manager.pause();
+      this.node.manager.pause();
       this.state = 'paused';
    }
 
    unpause() {
-      this.player.manager.unpause();
+      this.node.manager.unpause();
       this.state = 'playing';
    }
 
@@ -221,7 +342,7 @@ class Queue extends EventEmitter {
     * @param {number} volume - volume in number 0-1
     */
    volume(volume) {
-      this.player.manager.state.resource.volume.setVolume(volume);
+      this.player.state.resource.volume.setVolume(volume);
       this.config.volume = volume;
    }
 

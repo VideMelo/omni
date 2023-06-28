@@ -16,7 +16,7 @@ class Remove extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -26,15 +26,15 @@ class Remove extends Command {
                interaction.member?.voice?.channel?.id
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
          const index = interaction.options.getInteger('index');
-         if (index > player.queue.list.size)
+         if (index > queue.list.size)
             return await interaction.replyErro(
                "You can't remove a track that hasn't been added yet."
             );
 
-         const track = player.queue.remove(index);
+         const track = queue.remove(index);
          if (track) {
             return await interaction.reply(`Removed \`${track.name}\` from the queue.`);
          }

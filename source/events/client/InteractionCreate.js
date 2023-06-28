@@ -1,5 +1,6 @@
-const Event = require('../managers/Event.js');
 const { PermissionFlagsBits } = require('discord.js');
+
+const Event = require('../../managers/Event.js');
 
 class InteractionCreate extends Event {
    constructor() {

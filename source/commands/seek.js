@@ -16,7 +16,7 @@ class Seek extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -26,7 +26,7 @@ class Seek extends Command {
                interaction.member?.voice?.channel?.id
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
          const position = interaction.options.getString('position');
 
@@ -43,12 +43,12 @@ class Seek extends Command {
          const time =
             parseInt(hours) * 3600000 + parseInt(minutes) * 60000 + parseInt(seconds) * 1000;
 
-         if (time > player.queue.current.duration)
+         if (time > queue.current.duration)
             return await interaction.replyErro(
                'Position cannot be longer than the track duration.'
             );
 
-         await player.queue.seek(time);
+         await queue.seek(time);
          return await interaction.reply(`Seeked to \`${position}\`.`);
       } catch (error) {
          throw new Error(error);

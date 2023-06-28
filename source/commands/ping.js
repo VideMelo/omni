@@ -9,7 +9,6 @@ class Ping extends Command {
    }
 
    async execute({ client, interaction }) {
-      console.log(player.player, player.voice, player.queue);
       await interaction.reply(
          `**Pong!** 🏓 \nLatency is ${
             Date.now() - interaction.createdTimestamp

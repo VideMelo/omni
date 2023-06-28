@@ -14,7 +14,7 @@ class Volume extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const player = client.manager.get(interaction.guild.id);
+         const queue = client.player.get(interaction.guild.id);
          if (!interaction.member?.voice?.channel)
             return await interaction.replyErro('You must join a voice channel first.');
 
@@ -24,13 +24,13 @@ class Volume extends Command {
                interaction.member?.voice?.channel?.id
          )
             return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!player.queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
 
          const volume = interaction.options.getInteger('volume');
          if (volume < 0 || volume > 100)
             return await interaction.replyErro('Volume must be between 0 and 100');
 
-         player.queue.volume(volume / 100);
+         queue.volume(volume / 100);
          await interaction.reply(`Volume: \`${volume}%\``);
       } catch (error) {
          throw new Error(error);

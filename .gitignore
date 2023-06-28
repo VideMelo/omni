@@ -1,6 +1,4 @@
 .env
 /node_modules
-/package-lock.json
 /.vscode
-discloud.conf
 check-list.txt
