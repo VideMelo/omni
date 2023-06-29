@@ -1,4 +1,5 @@
 const Command = require('../managers/Command.js');
+const Errors = require('../utils/errors.js');
 
 class Seek extends Command {
    constructor(client) {
@@ -17,16 +18,9 @@ class Seek extends Command {
    async execute({ client, interaction }) {
       try {
          const queue = client.player.get(interaction.guild.id);
-         if (!interaction.member?.voice?.channel)
-            return await interaction.replyErro('You must join a voice channel first.');
 
-         if (
-            interaction.guild.members.me?.voice?.channel &&
-            interaction.guild.members.me?.voice?.channel?.id !=
-               interaction.member?.voice?.channel?.id
-         )
-            return await interaction.replyErro('You need to be on the same voice channel as me.');
-         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
+            return;
 
          const position = interaction.options.getString('position');
 

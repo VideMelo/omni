@@ -68,7 +68,7 @@ class InteractionCreate extends Event {
             await command.autocomplete({ client, interaction });
          } catch (error) {
             client.log.erro(`Error executing ${interaction.command.name}`);
-            console.error(error);
+            throw new Error(error);
          }
       }
    }

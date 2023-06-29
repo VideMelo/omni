@@ -5,13 +5,12 @@ const fs = require('node:fs');
 const Discord = require('discord.js');
 const intents = Discord.GatewayIntentBits;
 
-const Logger = require('../util/logger');
+const Logger = require('../utils/logger');
 
 const Button = require('../modules/button');
 const Embed = require('../modules/embed');
 
 const Player = require('../managers/Player');
-
 
 class Bot extends Discord.Client {
    constructor() {
@@ -42,12 +41,16 @@ class Bot extends Discord.Client {
    }
 
    LoadEvents() {
-      const folders = fs.readdirSync('./source/events').filter((file) => fs.statSync(`./source/events/${file}`).isDirectory());
+      const folders = fs
+         .readdirSync('./source/events')
+         .filter((file) => fs.statSync(`./source/events/${file}`).isDirectory());
       try {
          this.log.async('Started loading events:');
          let length = 0;
          folders.forEach((folder) => {
-            const files = fs.readdirSync(`./source/events/${folder}`).filter((file) => file.endsWith('.js'));
+            const files = fs
+               .readdirSync(`./source/events/${folder}`)
+               .filter((file) => file.endsWith('.js'));
             files.forEach((file) => {
                try {
                   const Event = require(`../events/${folder}/${file}`);
@@ -66,6 +69,8 @@ class Bot extends Discord.Client {
          });
          this.log.done(`Successfully loaded ${length} events.`);
       } catch (error) {
+         this.log.erro(`Error loading events.`);
+         throw new Error(error);
       }
    }
 
@@ -127,8 +132,9 @@ class Bot extends Discord.Client {
    async build() {
       try {
          this.login(this.config.DISCORD_TOKEN);
-      } catch (err) {
-         console.error(err);
+      } catch (error) {
+         this.log.erro(`Error logging in.`);
+         throw new Error(error);
       }
    }
 }

@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 
 const Command = require('../managers/Command.js');
+const Errors = require('../utils/errors.js');
 
 class Play extends Command {
    constructor(client) {
@@ -18,20 +19,13 @@ class Play extends Command {
 
    async execute({ client, interaction }) {
       try {
-         const voice = interaction.guild.me?.voice;
-         const channel = interaction.member?.voice?.channel;
-
-         if (!interaction.member?.voice?.channel)
-            return await interaction.replyErro('You must join a voice channel first.');
-
-         if (voice?.channel && voice?.channel?.id != channel?.id)
-            return await interaction.replyErro('You need to be on the same voice channel as me.');
+         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice'] })) return;
 
          await interaction.deferReply({ ephemeral: true });
 
          const player = client.player;
          const queue = player.get(interaction.guild.id);
-         
+
          const input = interaction.options.getString('input');
 
          let search;

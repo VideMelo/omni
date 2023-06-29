@@ -328,12 +328,12 @@ class Queue {
    }
 
    pause() {
-      this.node.manager.pause();
+      this.player.pause();
       this.state = 'paused';
    }
 
    unpause() {
-      this.node.manager.unpause();
+      this.player.unpause();
       this.state = 'playing';
    }
 

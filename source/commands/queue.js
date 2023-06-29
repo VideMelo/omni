@@ -1,4 +1,5 @@
 const Command = require('../managers/Command.js');
+const Errors = require('../utils/errors.js');
 
 class Queue extends Command {
    constructor(client) {
@@ -11,7 +12,8 @@ class Queue extends Command {
    async execute({ client, interaction }) {
       try {
          const queue = client.player.get(interaction.guild.id);
-         if (!queue.list.size) return await interaction.replyErro('No tracks in the queue.');
+
+         if (Errors(interaction, { errors: ['emptyQueue'], queue })) return;
 
          const tracks = queue.list.map((track) => {
             return `> **${track.index}.** ${track.name}\n> \`${track.authors[0].name}\``;

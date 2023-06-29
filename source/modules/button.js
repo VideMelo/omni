@@ -149,9 +149,7 @@ class Buttons {
                      components: [row],
                      fetchReply: true,
                   });
-               } catch (error) {
-                  console.error(error);
-               }
+               } catch (error) {}
             });
 
             collector.on('end', async () => {

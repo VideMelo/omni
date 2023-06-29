@@ -1,4 +1,5 @@
 const Command = require('../managers/Command.js');
+const Errors = require('../utils/errors.js');
 
 class Resume extends Command {
    constructor(client) {
@@ -11,20 +12,9 @@ class Resume extends Command {
    async execute({ client, interaction }) {
       try {
          const queue = client.player.get(interaction.guild.id);
-         if (
-            !interaction.guild.members.me?.voice?.channel ||
-            !client.voice.adapters.get(interaction.guild.id)
-         )
-            return await interaction.replyErro("I'm not on any voice channels");
-         if (!interaction.member?.voice?.channel)
-            return await interaction.replyErro('You must join a voice channel first.');
 
-         if (
-            interaction.guild.members.me?.voice?.channel &&
-            interaction.guild.members.me?.voice?.channel?.id !=
-               interaction.member.voice?.channel?.id
-         )
-            return await interaction.replyErro('You need to be on the same voice channel as me.');
+         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
+            return;
 
          if (!queue.list.size) return await interaction.replyErro('there is nothing to resume.');
          if (queue.state == 'playing')

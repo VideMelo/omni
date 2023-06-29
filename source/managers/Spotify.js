@@ -111,8 +111,8 @@ class Spotify {
             tracks: tracks.items.map((track) => new Track(this.build(track.track))),
             page,
          };
-      } catch (err) {
-         throw new Error(err);
+      } catch (error) {
+         throw new Error(error);
       }
    }
 
