@@ -40,7 +40,10 @@ class Spotify {
                   client.log.info(`Refreshed Spotify Token. It now expires in ${time} minutes!`);
                })
                .catch((err) => {
-                  client.log.error('Something went wrong when refreshing an access token', err);
+                  if (err.body.error_description === 'refresh_token must be supplied') {
+                     return client.log.warn('Spotify Refresh Token is missing from config.');
+                  }
+                  client.log.erro('Something went wrong when refreshing an access token', err);
                });
          }
       }, 1000);
@@ -48,6 +51,12 @@ class Spotify {
       this.urls = {
          pattern: /https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]{22})/,
       };
+   }
+
+   async refreshAccessToken() {
+      const data = await this.api.refreshAccessToken();
+      this.api.setAccessToken(data.body['access_token']);
+      return data.body['access_token'];
    }
 
    async search(input, options) {
@@ -73,10 +82,21 @@ class Spotify {
    }
 
    async getList(input, results = 5, options) {
-      const search = await this.api.searchTracks(input, {
-         limit: results,
-         ...options,
-      });
+      const search = await this.api
+         .searchTracks(input, {
+            limit: results,
+            ...options,
+         })
+         .catch((error) => {
+            if (error.statusCode === 401) {
+               this.refreshAccessToken();
+               return this.api.searchTracks(input, {
+                  limit: results,
+                  ...options,
+               });
+            }
+         });
+
       if (search.body.tracks.total == 0) return;
       return {
          type: 'search',
@@ -91,11 +111,30 @@ class Spotify {
          const page = options?.page || 1;
          const offset = (page - 1) * 100 || 0;
 
-         const playlist = await this.api.getPlaylist(id).then((playlist) => playlist.body);
+         const playlist = await this.api
+            .getPlaylist(id)
+            .then((playlist) => playlist.body)
+            .catch((error) => {
+               if (error.statusCode === 401) {
+                  this.refreshAccessToken();
+                  return this.api.getPlaylist(id).then((playlist) => playlist.body);
+               }
+            });
+
          const tracks =
             page === 1
                ? playlist.tracks
-               : await this.api.getPlaylistTracks(id, { offset }).then((tracks) => tracks.body);
+               : await this.api
+                    .getPlaylistTracks(id, { offset })
+                    .then((tracks) => tracks.body)
+                    .catch((error) => {
+                       if (error.statusCode === 401) {
+                          this.refreshAccessToken();
+                          return this.api
+                             .getPlaylistTracks(id, { offset })
+                             .then((tracks) => tracks.body);
+                       }
+                    });
 
          if (playlist.tracks.total == 0) return;
          if (offset > playlist.tracks.total) return;
@@ -117,8 +156,39 @@ class Spotify {
    }
 
    async getTrack(id) {
-      const track = await this.api.getTrack(id);
+      const track = await this.api.getTrack(id).catch((error) => {
+         if (error.statusCode === 401) {
+            this.refreshAccessToken();
+            return this.api.getTrack(id);
+         }
+      });
+
       return new Track(this.build(track.body));
+   }
+
+   async getAlbum(id) {
+      const album = await this.api
+         .getAlbum(id)
+         .then((album) => album.body)
+         .catch((error) => {
+            if (error.statusCode === 401) {
+               this.refreshAccessToken();
+               return this.api.getAlbum(id).then((album) => album.body);
+            }
+         });
+
+      return {
+         type: 'list',
+         id: album.id,
+         name: album.name,
+         authors: album.artists,
+         thumbnail: album.images[0].url,
+         url: album.external_urls.spotify,
+         total: album.tracks.total,
+         tracks: album.tracks.items.map(
+            (track) => new Track(this.build({ ...track, thumbnail: album.images[0].url }))
+         ),
+      };
    }
 
    build(track) {
@@ -134,7 +204,7 @@ class Spotify {
             };
          }),
          duration: track.duration_ms,
-         thumbnail: track?.album?.images[2]?.url,
+         thumbnail: track?.thumbnail || track?.album?.images[2]?.url,
          query: `${track.artists[0].name} - ${track.name} (Audio)`,
       };
    }
