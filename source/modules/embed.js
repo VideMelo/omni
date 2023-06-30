@@ -7,7 +7,7 @@ class Embed {
       description = '',
       fields = [],
       thumbnail = '',
-      color = '386483',
+      color = 'BA3737',
       timestamp = false,
       author = '',
       footer = 0,

@@ -1,7 +1,10 @@
 const Discord = require('discord.js');
-const { joinVoiceChannel } = require('@discordjs/voice');
-
-const { createAudioResource, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
+const {
+   createAudioResource,
+   createAudioPlayer,
+   joinVoiceChannel,
+   AudioPlayerStatus,
+} = require('@discordjs/voice');
 
 const ytdl = require('ytdl-core');
 
@@ -45,9 +48,11 @@ class Queue {
          if (this.idle()) {
             this.player.stop();
             this.list.clear();
+
             this.current = { index: 0 };
             this.metadata.connection.destroy();
-            this.node.emit('idle');
+
+            this.node.emit('queueEnd', this);
             return;
          }
          this.play(this.next(), { state: 'update' });
@@ -55,7 +60,7 @@ class Queue {
 
       this.player.on(AudioPlayerStatus.Playing, () => {
          this.state = 'playing';
-         this.node.emit('playing', this, this.current, client);
+         this.node.emit('playing', this, this.current);
       });
    }
 

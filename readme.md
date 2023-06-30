@@ -22,9 +22,6 @@ DISCORD_ID=12345678901235 # Discord Bot ID
 # Get this in https://developer.spotify.com/dashboard
 SPOTIFY_ID=abcde1234fghijk5678 # Spotify ID
 SPOTIFY_SECRET=6abcde1234fghijk5678 # Spotify Secret
-
-# Get this in https://alecchen.dev/spotify-refresh-token
-SPOTIFY_REFRESH=6abcde1234fghijk56786a... # Spotify Refresh Token
 ```
 
 ### Run

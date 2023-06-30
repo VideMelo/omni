@@ -7,39 +7,18 @@ class Spotify {
       this.api = new SpotifyWebApi({
          clientId: client.config.SPOTIFY_ID,
          clientSecret: client.config.SPOTIFY_SECRET,
-         redirectUri: client.config.SPOTIFY_REDIRECT,
       });
 
-      let expiration;
+      this.expiration;
       this.api
          .clientCredentialsGrant()
          .then((data) => {
+            this.expiration = new Date().getTime() / 1000 + data.body['expires_in'];
             this.api.setAccessToken(data.body['access_token']);
-            this.api.setRefreshToken(client.config.SPOTIFY_REFRESH);
-
-            expiration = new Date().getTime() / 1000 + data.body['expires_in'];
-            client.log.info('Retrieved Spotify Token.');
          })
          .catch((err) => {
             client.log.erro('Something went wrong when retrieving an access token', err);
          });
-
-      const api = this.api;
-      let updates = 0;
-
-      setInterval(function () {
-         if (++updates > 5) {
-            clearInterval(this);
-            api.refreshAccessToken()
-               .then(() => {
-                  let time = Math.floor((expiration - new Date().getTime() / 1000) / 60);
-                  client.log.info(`Refreshed Spotify Token. It now expires in ${time} minutes!`);
-               })
-               .catch((err) => {
-                  client.log.erro('Something went wrong when refreshing an access token', err);
-               });
-         }
-      }, 1000);
 
       this.urls = {
          pattern: /https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]{22})/,
@@ -47,8 +26,11 @@ class Spotify {
    }
 
    async refreshAccessToken() {
-      const data = await this.api.refreshAccessToken();
+      const data = await this.api.clientCredentialsGrant();
+
       this.api.setAccessToken(data.body['access_token']);
+      this.expiration = new Date().getTime() / 1000 + data.body['expires_in'];
+
       return data.body['access_token'];
    }
 
@@ -75,20 +57,12 @@ class Spotify {
    }
 
    async getList(input, results = 5, options) {
-      const search = await this.api
-         .searchTracks(input, {
-            limit: results,
-            ...options,
-         })
-         .catch(async (error) => {
-            if (error.statusCode === 401) {
-               await this.refreshAccessToken();
-               return this.api.searchTracks(input, {
-                  limit: results,
-                  ...options,
-               });
-            }
-         });
+      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
+
+      const search = await this.api.searchTracks(input, {
+         limit: results,
+         ...options,
+      });
 
       if (search.body.tracks.total == 0) return;
       return {
@@ -100,66 +74,44 @@ class Spotify {
    }
 
    async getPlaylist(id, { ...options }) {
-      try {
-         const page = options?.page || 1;
-         const offset = (page - 1) * 100 || 0;
+      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
 
-         const playlist = await this.api
-            .getPlaylist(id)
-            .then((playlist) => playlist.body)
-            .catch(async (error) => {
-               if (error.statusCode === 401) {
-                  await this.refreshAccessToken();
-                  return this.api.getPlaylist(id).then((playlist) => playlist.body);
-               }
-            });
+      const playlist = await this.api.getPlaylist(id).then((playlist) => playlist.body);
 
-         const tracks =
-            page === 1
-               ? playlist.tracks
-               : await this.api
-                    .getPlaylistTracks(id, { offset })
-                    .then((tracks) => tracks.body)
-                    .catch(async (error) => {
-                       if (error.statusCode === 401) {
-                          await this.refreshAccessToken();
-                          return this.api
-                             .getPlaylistTracks(id, { offset })
-                             .then((tracks) => tracks.body);
-                       }
-                    });
+      const page = options?.page || 1;
+      const offset = (page - 1) * 100 || 0;
 
-         if (playlist.tracks.total == 0) return;
-         if (offset > playlist.tracks.total) return;
+      const tracks =
+         page === 1
+            ? playlist.tracks
+            : await this.api.getPlaylistTracks(id, { offset }).then((tracks) => tracks.body);
 
-         return {
-            type: 'list',
-            id: playlist.id,
-            name: playlist.name,
-            authors: playlist.owner.display_name,
-            thumbnail: playlist.images[0].url,
-            url: playlist.external_urls.spotify,
-            total: playlist.tracks.total,
-            tracks: tracks.items.map((track) => new Track(this.build(track.track))),
-            page,
-         };
-      } catch (error) {
-         throw new Error(error);
-      }
+      if (playlist.tracks.total == 0) return;
+      if (offset > playlist.tracks.total) return;
+
+      return {
+         type: 'list',
+         id: playlist.id,
+         name: playlist.name,
+         authors: playlist.owner.display_name,
+         thumbnail: playlist.images[0].url,
+         url: playlist.external_urls.spotify,
+         total: playlist.tracks.total,
+         tracks: tracks.items.map((track) => new Track(this.build(track.track))),
+         page,
+      };
    }
 
    async getTrack(id) {
-      const track = await this.api.getTrack(id).catch(async (error) => {
-         if (error.statusCode === 401) {
-            await this.refreshAccessToken();
-            return this.api.getTrack(id);
-         }
-      });
+      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
 
+      const track = await this.api.getTrack(id);
       return new Track(this.build(track.body));
    }
 
    async getAlbum(id) {
+      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
+
       const album = await this.api
          .getAlbum(id)
          .then((album) => album.body)
