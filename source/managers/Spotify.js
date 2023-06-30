@@ -10,10 +10,6 @@ class Spotify {
          redirectUri: client.config.SPOTIFY_REDIRECT,
       });
 
-      // const scopes = ['user-read-private', 'user-read-email', 'playlist-read-private'];
-      // this.auth = this.api.createAuthorizeURL(scopes);
-      // console.log(this.auth);
-
       let expiration;
       this.api
          .clientCredentialsGrant()
@@ -40,9 +36,6 @@ class Spotify {
                   client.log.info(`Refreshed Spotify Token. It now expires in ${time} minutes!`);
                })
                .catch((err) => {
-                  if (err.body.error_description === 'refresh_token must be supplied') {
-                     return client.log.warn('Spotify Refresh Token is missing from config.');
-                  }
                   client.log.erro('Something went wrong when refreshing an access token', err);
                });
          }
@@ -87,9 +80,9 @@ class Spotify {
             limit: results,
             ...options,
          })
-         .catch((error) => {
+         .catch(async (error) => {
             if (error.statusCode === 401) {
-               this.refreshAccessToken();
+               await this.refreshAccessToken();
                return this.api.searchTracks(input, {
                   limit: results,
                   ...options,
@@ -114,9 +107,9 @@ class Spotify {
          const playlist = await this.api
             .getPlaylist(id)
             .then((playlist) => playlist.body)
-            .catch((error) => {
+            .catch(async (error) => {
                if (error.statusCode === 401) {
-                  this.refreshAccessToken();
+                  await this.refreshAccessToken();
                   return this.api.getPlaylist(id).then((playlist) => playlist.body);
                }
             });
@@ -127,9 +120,9 @@ class Spotify {
                : await this.api
                     .getPlaylistTracks(id, { offset })
                     .then((tracks) => tracks.body)
-                    .catch((error) => {
+                    .catch(async (error) => {
                        if (error.statusCode === 401) {
-                          this.refreshAccessToken();
+                          await this.refreshAccessToken();
                           return this.api
                              .getPlaylistTracks(id, { offset })
                              .then((tracks) => tracks.body);
@@ -156,9 +149,9 @@ class Spotify {
    }
 
    async getTrack(id) {
-      const track = await this.api.getTrack(id).catch((error) => {
+      const track = await this.api.getTrack(id).catch(async (error) => {
          if (error.statusCode === 401) {
-            this.refreshAccessToken();
+            await this.refreshAccessToken();
             return this.api.getTrack(id);
          }
       });
@@ -170,9 +163,9 @@ class Spotify {
       const album = await this.api
          .getAlbum(id)
          .then((album) => album.body)
-         .catch((error) => {
+         .catch(async (error) => {
             if (error.statusCode === 401) {
-               this.refreshAccessToken();
+               await this.refreshAccessToken();
                return this.api.getAlbum(id).then((album) => album.body);
             }
          });
