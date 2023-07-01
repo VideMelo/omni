@@ -1,15 +1,5 @@
 class Track {
-   constructor({
-      source = '',
-      name = '',
-      authors = [],
-      thumbnail = '',
-      duration = 0,
-      url,
-      live = false,
-      query = '',
-      id = '',
-   }) {
+   constructor({ source, name, authors = [], thumbnail, duration = 0, url, live = false, query, id }) {
       this.source = source;
       this.name = name;
       this.authors = authors;

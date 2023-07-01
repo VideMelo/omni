@@ -1,4 +1,4 @@
-const Event = require('../../managers/Event');
+const Event = require('../../handlers/Event');
 
 class NewTrack extends Event {
    constructor() {
@@ -10,7 +10,7 @@ class NewTrack extends Event {
       const color = await client.embed.color(track.thumbnail);
 
       const Embed = client.embed.new({
-         color: color?.Vibrant?.hex ?? color,
+         color,
          author: {
             name: 'New track!',
          },

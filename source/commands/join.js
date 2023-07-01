@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Join extends Command {
    constructor(client) {
@@ -13,7 +12,7 @@ class Join extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['userVoice'] })) return;
+         if (client.errors(interaction, { errors: ['userVoice'] })) return;
 
          interaction.noReply();
          queue.connect(interaction.member.voice.channel, interaction.channel.guild, interaction);

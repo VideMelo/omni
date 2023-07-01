@@ -1,54 +1,16 @@
 const Discord = require('discord.js');
 
 class Buttons {
-   primary(id, label) {
+   new({ style = 'Primary', label, id, url, emoji, disabled = false }) {
       const button = new Discord.ButtonBuilder();
-      button.setCustomId(id);
-      button.setLabel(label);
-      button.setStyle('Primary');
-      return button;
-   }
 
-   secondary(id, label) {
-      const button = new Discord.ButtonBuilder();
-      button.setCustomId(id);
-      button.setLabel(label);
-      button.setStyle('Secondary');
-      return button;
-   }
-
-   success(id, label) {
-      const button = new Discord.ButtonBuilder();
-      button.setCustomId(id);
-      button.setLabel(label);
-      button.setStyle('Success');
-      return button;
-   }
-
-   danger(id, label) {
-      const button = new Discord.ButtonBuilder();
-      button.setCustomId(id);
-      button.setLabel(label);
-      button.setStyle('Danger');
-      return button;
-   }
-
-   link(id, label, url) {
-      const button = new Discord.ButtonBuilder();
-      button.setCustomId(id);
-      button.setLabel(label);
-      button.setUrl(url);
-      button.setStyle('Link');
-      return button;
-   }
-
-   emoji(id, emoji, style = 'Primary', label = '') {
-      const button = new Discord.ButtonBuilder();
-      button.setCustomId(id);
-      button.setEmoji(emoji);
-      button.setStyle(style);
-
+      if (id) button.setCustomId(id);
       if (label) button.setLabel(label);
+      if (style === 'Link' && url) button.setUrl(url);
+      if (emoji) button.setEmoji(emoji);
+      if (style) button.setStyle(style);
+
+      button.setDisabled(disabled);
       return button;
    }
 
@@ -74,19 +36,34 @@ class Buttons {
          if (pages.length > 1) {
             let page = 0;
 
-            const first = this.emoji('first', '<:first:1070496991345377411>', style).setDisabled(
-               true
-            );
-            const previous = this.emoji(
-               'previous',
-               '<:previous:1070496467254513706>',
-               style
-            ).setDisabled(true);
-            const number = this.secondary('number', `${page + 1}/${pages.length}`).setDisabled(
-               true
-            );
-            const next = this.emoji('next', '<:next:1070496518420844566>', style);
-            const last = this.emoji('last', '<:last:1070497040997568634>', style);
+            const first = this.new({
+               id: 'first',
+               emoji: '<:first:1070496991345377411>',
+               disabled: true,
+               style,
+            });
+            const previous = this.new({
+               id: 'previous',
+               emoji: '<:previous:1070496467254513706>',
+               disabled: true,
+               style,
+            });
+            const number = this.new({
+               id: 'number',
+               label: `${page + 1}/${pages.length}`,
+               style: 'Secondary',
+               disabled: true,
+            });
+            const next = this.new({
+               id: 'next',
+               emoji: '<:next:1070496518420844566>',
+               style,
+            });
+            const last = this.new({
+               id: 'last',
+               emoji: '<:last:1070497040997568634>',
+               style,
+            });
 
             const buttons = [first, previous, number, next, last];
             const row = this.row(buttons);

@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
+const Logger = require('../utils/logger');
 
 class Play extends Command {
    constructor(client) {
@@ -19,7 +19,7 @@ class Play extends Command {
 
    async execute({ client, interaction }) {
       try {
-         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice'] })) return;
+         if (client.errors(interaction, { errors: ['userVoice', 'inSameVoice'] })) return;
 
          await interaction.deferReply({ ephemeral: true });
 
@@ -32,7 +32,7 @@ class Play extends Command {
          try {
             search = await player.search.list(input);
          } catch (error) {
-            client.log.erro(error);
+            Logger.erro(error);
 
             return interaction.replyErro(
                'An error occurred while searching, please try again later.'

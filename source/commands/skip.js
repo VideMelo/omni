@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Skip extends Command {
    constructor(client) {
@@ -17,8 +16,10 @@ class Skip extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
-            return;
+         if (client.errors(interaction, {
+               errors: ['userVoice', 'inSameVoice', 'emptyQueue'],
+               queue,
+            })) return;
 
          let index = interaction.options.getInteger('to');
          if (index > queue.list.size)

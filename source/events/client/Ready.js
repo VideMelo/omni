@@ -1,5 +1,7 @@
-const Event = require('../../managers/Event.js');
-const Player = require('../../managers/Player.js');
+const Event = require('../../handlers/Event.js');
+const Player = require('../../handlers/Player.js');
+
+const Logger = require('../../utils/logger');
 
 class ClientReady extends Event {
    constructor() {
@@ -8,8 +10,13 @@ class ClientReady extends Event {
 
    async execute(client, interaction) {
       await Player.init(client);
-      client.application.commands.fetch();
-      client.log.info(`Ready! Logged in as: ${interaction.user.username}`);
+      await client.application.commands.fetch();
+
+      await client.user.setPresence({
+         activities: [{ name: 'Music!', type: 2 }],
+      });
+
+      Logger.info(`Ready! Logged in as: ${interaction.user.username}`);
    }
 }
 

@@ -1,16 +1,17 @@
 require('dotenv/config');
 
-const fs = require('node:fs');
-
 const Discord = require('discord.js');
 const intents = Discord.GatewayIntentBits;
+
+const fs = require('node:fs');
 
 const Logger = require('../utils/logger');
 
 const Button = require('../modules/button');
 const Embed = require('../modules/embed');
+const Errors = require('../modules/errors');
 
-const Player = require('../managers/Player');
+const Player = require('../handlers/Player');
 
 class Bot extends Discord.Client {
    constructor() {
@@ -27,10 +28,9 @@ class Bot extends Discord.Client {
 
       this.commands = new Discord.Collection();
 
-      this.log = new Logger();
-
       this.button = new Button(this);
       this.embed = new Embed(this);
+      this.errors = Errors;
 
       this.player = new Player(this);
 
@@ -45,7 +45,7 @@ class Bot extends Discord.Client {
          .readdirSync('./source/events')
          .filter((file) => fs.statSync(`./source/events/${file}`).isDirectory());
       try {
-         this.log.async('Started loading events:');
+         Logger.async('Started loading events:');
          let length = 0;
          folders.forEach((folder) => {
             const files = fs
@@ -60,16 +60,16 @@ class Bot extends Discord.Client {
                   } else if (folder == 'player') {
                      this.player.on(event.name, (...args) => event.execute(this, ...args));
                   }
-                  // this.log.info(`${file} working`);
+                  // Logger.info(`${file} working`);
                   length++;
                } catch (error) {
-                  this.log.erro(`${file} failed: ${error}`);
+                  Logger.erro(`${file} failed: ${error}`);
                }
             });
          });
-         this.log.done(`Successfully loaded ${length} events.`);
+         Logger.done(`Successfully loaded ${length} events.`);
       } catch (error) {
-         this.log.erro(`Error loading events.`);
+         Logger.erro(`Error loading events.`);
          throw new Error(error);
       }
    }
@@ -77,26 +77,26 @@ class Bot extends Discord.Client {
    async LoadCommands() {
       const files = fs.readdirSync('./source/commands').filter((file) => file.endsWith('.js'));
       try {
-         this.log.async('Started loading commands:');
+         Logger.async('Started loading commands:');
          files.forEach(async (file) => {
             try {
                const Command = require(`../commands/${file}`);
                const command = new Command(this);
                if (command.name && command.description) {
                   this.commands.set(command.name, command);
-                  // this.log.info(`${file} working`);
+                  // Logger.info(`${file} working`);
                } else {
-                  this.log.warn(
+                  Logger.warn(
                      `The command at ${file} is missing a required "name" or "descripition" property.`
                   );
                }
             } catch (error) {
-               this.log.erro(`${file} failed: ${error}`);
+               Logger.erro(`${file} failed: ${error}`);
             }
          });
-         this.log.done(`Successfully loaded ${this.commands.size} commands.`);
+         Logger.done(`Successfully loaded ${this.commands.size} commands.`);
       } catch (error) {
-         this.log.erro(`Error loading commands.`);
+         Logger.erro(`Error loading commands.`);
          throw new Error(error);
       }
    }
@@ -106,11 +106,11 @@ class Bot extends Discord.Client {
 
       try {
          if (this.commands.size == 0) {
-            this.log.erro('Could not find any command');
+            Logger.erro('Could not find any command');
             throw new Error();
          }
 
-         this.log.async(`Started loading interactions:`);
+         Logger.async(`Started loading interactions:`);
          const data = await rest.put(Discord.Routes.applicationCommands(this.config.DISCORD_ID), {
             body: this.commands.map((command) => command),
          });
@@ -122,9 +122,9 @@ class Bot extends Discord.Client {
             });
          });
 
-         this.log.done(`Successfully loaded ${data.length} interactions`);
+         Logger.done(`Successfully loaded ${data.length} interactions`);
       } catch (error) {
-         this.log.erro(`Error loading interactions.`);
+         Logger.erro(`Error loading interactions.`);
          throw new Error(error);
       }
    }
@@ -133,7 +133,7 @@ class Bot extends Discord.Client {
       try {
          this.login(this.config.DISCORD_TOKEN);
       } catch (error) {
-         this.log.erro(`Error logging in.`);
+         Logger.erro(`Error logging in.`);
          throw new Error(error);
       }
    }

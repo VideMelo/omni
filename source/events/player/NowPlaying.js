@@ -1,4 +1,5 @@
-const Event = require('../../managers/Event');
+const Event = require('../../handlers/Event');
+const Logger = require('../../utils/logger');
 
 class NowPlaying extends Event {
    constructor() {
@@ -11,7 +12,7 @@ class NowPlaying extends Event {
       const color = await client.embed.color(track?.thumbnail);
 
       const Embed = client.embed.new({
-         color: color?.Vibrant?.hex ?? color,
+         color,
          author: {
             name: 'Now Playing!',
          },
@@ -29,7 +30,7 @@ class NowPlaying extends Event {
          queue.metadata.message = message;
          await last?.delete();
       } catch (error) {
-         client.log.erro(error);
+         Logger.erro(error);
       }
    }
 }

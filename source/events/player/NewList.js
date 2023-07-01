@@ -1,4 +1,4 @@
-const Event = require('../../managers/Event');
+const Event = require('../../handlers/Event');
 
 const Discord = require('discord.js');
 
@@ -11,7 +11,7 @@ class NewList extends Event {
       const color = await client.embed.color(list?.thumbnail);
 
       const Embed = client.embed.new({
-         color: color?.Vibrant?.hex ?? color,
+         color,
          author: {
             name: 'New Playlist!',
          },
@@ -19,12 +19,18 @@ class NewList extends Event {
          title: `${list.name.length > 36 ? `${list.name.slice(0, 36)}...` : list.name}`,
          description: `Added **${list.tracks.length}** tracks!`,
       });
-      
+
       if (list?.page) {
-         const next = client.button.primary('next', 'Load Next Page', { style: 1 });
-         const pages = client.button
-            .secondary('pages', `${list.page}/${Math.ceil(list.total / 100)}`)
-            .setDisabled(true);
+         const next = client.button.new({
+            id: 'next',
+            label: 'Load Next Page',
+         });
+         const pages = client.button.new({
+            id: 'pages',
+            label: `${list.page}/${Math.ceil(list.total / 100)}`,
+            style: 'Secondary',
+            disabled: true,
+         });
          const row = client.button.row([next, pages]);
 
          const message = await queue.metadata.channel.send({

@@ -1,5 +1,4 @@
 const Discord = require('discord.js');
-const { createAudioPlayer } = require('@discordjs/voice');
 
 const { EventEmitter } = require('events');
 

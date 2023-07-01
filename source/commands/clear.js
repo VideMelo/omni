@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Clear extends Command {
    constructor(client) {
@@ -13,7 +12,7 @@ class Clear extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, {
+         if (client.errors(interaction, {
                errors: ['botVoice', 'emptyQueue', 'userVoice', 'inSameVoice'],
                queue,
             })) return;

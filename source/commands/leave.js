@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Leave extends Command {
    constructor(client) {
@@ -13,7 +12,7 @@ class Leave extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['botVoice'] })) return;
+         if (client.errors(interaction, { errors: ['botVoice'] })) return;
 
          queue.disconnect();
          interaction.noReply();

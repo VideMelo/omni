@@ -1,5 +1,6 @@
 const SpotifyWebApi = require('spotify-web-api-node');
 
+const Logger = require('../utils/logger');
 const Track = require('./Track');
 
 class Spotify {
@@ -17,7 +18,7 @@ class Spotify {
             this.api.setAccessToken(data.body['access_token']);
          })
          .catch((err) => {
-            client.log.erro('Something went wrong when retrieving an access token', err);
+            Logger.erro('Something went wrong when retrieving an access token', err);
          });
 
       this.urls = {
@@ -58,7 +59,6 @@ class Spotify {
 
    async getList(input, results = 5, options) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-
       const search = await this.api.searchTracks(input, {
          limit: results,
          ...options,
@@ -75,7 +75,6 @@ class Spotify {
 
    async getPlaylist(id, { ...options }) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-
       const playlist = await this.api.getPlaylist(id).then((playlist) => playlist.body);
 
       const page = options?.page || 1;
@@ -104,23 +103,13 @@ class Spotify {
 
    async getTrack(id) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-
       const track = await this.api.getTrack(id);
       return new Track(this.build(track.body));
    }
 
    async getAlbum(id) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-
-      const album = await this.api
-         .getAlbum(id)
-         .then((album) => album.body)
-         .catch(async (error) => {
-            if (error.statusCode === 401) {
-               await this.refreshAccessToken();
-               return this.api.getAlbum(id).then((album) => album.body);
-            }
-         });
+      const album = await this.api.getAlbum(id).then((album) => album.body);
 
       return {
          type: 'list',
@@ -131,7 +120,7 @@ class Spotify {
          url: album.external_urls.spotify,
          total: album.tracks.total,
          tracks: album.tracks.items.map(
-            (track) => new Track(this.build({ ...track, thumbnail: album.images[0].url }))
+            (track) => new Track(this.build({ ...track, album: album }))
          ),
       };
    }
@@ -149,7 +138,7 @@ class Spotify {
             };
          }),
          duration: track.duration_ms,
-         thumbnail: track?.thumbnail || track?.album?.images[2]?.url,
+         thumbnail: track?.album?.images[2]?.url,
          query: `${track.artists[0].name} - ${track.name} (Audio)`,
       };
    }

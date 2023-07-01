@@ -1,4 +1,4 @@
-const Event = require('../../managers/Event');
+const Event = require('../../handlers/Event');
 
 class QueueEnd extends Event {
    constructor() {

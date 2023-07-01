@@ -1,6 +1,7 @@
 const { PermissionFlagsBits } = require('discord.js');
 
-const Event = require('../../managers/Event.js');
+const Event = require('../../handlers/Event.js');
+const Logger = require('../../utils/logger');
 
 class InteractionCreate extends Event {
    constructor() {
@@ -36,7 +37,7 @@ class InteractionCreate extends Event {
 
          const command = client.commands.get(interaction.command.name);
          if (!command) {
-            client.log.erro(`No command matching ${interaction.command.name} was found.`);
+            Logger.erro(`No command matching ${interaction.command.name} was found.`);
             return;
          }
 
@@ -50,7 +51,7 @@ class InteractionCreate extends Event {
                throw new Error();
             await command.execute({ client, interaction });
          } catch (error) {
-            client.log.erro(`Error executing ${interaction.command.name}:`, error);
+            Logger.erro(`Error executing ${interaction.command.name}:`, error);
             await interaction.replyErro(
                `What the f#@&! A very serious error occurred, try again later. \`\`\`${error}\`\`\``
             );
@@ -60,14 +61,14 @@ class InteractionCreate extends Event {
       if (interaction.isAutocomplete()) {
          const command = client.commands.get(interaction.command.name);
          if (!command) {
-            client.log.erro(`No command matching ${interaction.command.name} was found.`);
+            Logger.erro(`No command matching ${interaction.command.name} was found.`);
             return;
          }
 
          try {
             await command.autocomplete({ client, interaction });
          } catch (error) {
-            client.log.erro(`Error executing ${interaction.command.name}`);
+            Logger.erro(`Error executing ${interaction.command.name}`);
             throw new Error(error);
          }
       }

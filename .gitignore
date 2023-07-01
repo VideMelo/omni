@@ -1,4 +1,4 @@
-.env
+# node
 /node_modules
-/.vscode
-check-list.txt
+npm-debug.log
+.env

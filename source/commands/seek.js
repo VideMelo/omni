@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Seek extends Command {
    constructor(client) {
@@ -19,8 +18,10 @@ class Seek extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
-            return;
+         if (client.errors(interaction, {
+               errors: ['userVoice', 'inSameVoice', 'emptyQueue'],
+               queue,
+            })) return;
 
          const position = interaction.options.getString('position');
 

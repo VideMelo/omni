@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Volume extends Command {
    constructor(client) {
@@ -17,8 +16,10 @@ class Volume extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
-            return;
+         if (client.errors(interaction, {
+               errors: ['userVoice', 'inSameVoice', 'emptyQueue'],
+               queue,
+            })) return;
 
          const volume = interaction.options.getInteger('volume');
          if (volume < 0 || volume > 100)

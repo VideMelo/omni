@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Loop extends Command {
    constructor(client) {
@@ -13,8 +12,10 @@ class Loop extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
-            return;
+         if (client.errors(interaction, {
+               errors: ['userVoice', 'inSameVoice', 'emptyQueue'],
+               queue,
+            })) return;
 
          queue.config.loop = queue.config.loop ? false : queue.config.repeat ? false : true;
          queue.config.repeat = queue.config.repeat ? false : queue.config.loop ? false : true;

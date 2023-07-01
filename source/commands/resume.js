@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Resume extends Command {
    constructor(client) {
@@ -13,8 +12,10 @@ class Resume extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['userVoice', 'inSameVoice', 'emptyQueue'], queue }))
-            return;
+         if (client.errors(interaction, {
+               errors: ['userVoice', 'inSameVoice', 'emptyQueue'],
+               queue,
+            })) return;
 
          if (!queue.list.size) return await interaction.replyErro('there is nothing to resume.');
          if (queue.state == 'playing')

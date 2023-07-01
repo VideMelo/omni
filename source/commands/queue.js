@@ -1,5 +1,4 @@
-const Command = require('../managers/Command.js');
-const Errors = require('../utils/errors.js');
+const Command = require('../handlers/Command.js');
 
 class Queue extends Command {
    constructor(client) {
@@ -13,7 +12,7 @@ class Queue extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (Errors(interaction, { errors: ['emptyQueue'], queue })) return;
+         if (client.errors(interaction, { errors: ['emptyQueue'], queue })) return;
 
          const tracks = queue.list.map((track) => {
             return `> **${track.index}.** ${track.name}\n> \`${track.authors[0].name}\``;
@@ -29,7 +28,7 @@ class Queue extends Command {
          const embeds = pages.map((track, index) => {
             return client.embed.new({
                thumbnail: `${current.thumbnail}`,
-               color: color.Vibrant.hex,
+               color,
                fields: [
                   {
                      name: 'Current',
