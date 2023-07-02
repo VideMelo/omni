@@ -1,30 +1,27 @@
-# Jukebox
-
 ## Get Started
 
+### Prerequisites
+- [Node.js v19.X](https://nodejs.org/)
+
 ### Install Packages
-
 ```sh
-npm install
+yarn
 ```
-
-> If an error occurs during the installation, look for the documentation of the packages.
+> **Note:** If you don't have `yarn` installed, install with `npm install -g yarn`
 
 ### Development Setup
-
-Create a `.env` file to set configs.
+Rename `.env.template` to `.env` in `./server` and configure the following settings:
 
 ```sh
 # Get this in https://discord.com/developers/applications
-DISCORD_TOKEN=ABCDEFGAIJK.LMNOPQRS.TUVW-XYZ... # Discord Bot Token
-DISCORD_ID=12345678901235 # Discord Bot ID
+DISCORD_TOKEN= # Your Discord Bot Token
 
 # Get this in https://developer.spotify.com/dashboard
-SPOTIFY_ID=abcde1234fghijk5678 # Spotify ID
-SPOTIFY_SECRET=6abcde1234fghijk5678 # Spotify Secret
+SPOTIFY_ID= # Your Spotify ID
+SPOTIFY_SECRET= # Your Spotify Secret
 ```
 
 ### Run
 ```
-npm start
+yarn dev
 ```

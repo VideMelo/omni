@@ -1,4 +1,11 @@
-# node
-/node_modules
-npm-debug.log
-.env
+# Node
+**/node_modules
+**.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Workspace
+.vscode

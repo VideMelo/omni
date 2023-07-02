@@ -1,23 +1,31 @@
 {
    "name": "jukebox",
+   "description": "A Discord Music Bot",
    "version": "1.0.0",
-   "description": "",
+   "scripts": {
+      "dev": "concurrently \"yarn workspace server dev\" \"yarn workspace client dev\"",
+      "start:server": "yarn workspace server start",
+      "start:client": "yarn workspace client start"
+   },
    "main": "index.js",
    "type": "commonjs",
-   "scripts": {
-      "start": "node index.js",
-      "dev": "nodemon index.js",
-      "test": "echo \"Error: no test specified\" && exit 1"
-   },
    "engines": {
       "node": "19.x"
    },
-   "keywords": [],
-   "author": "",
-   "license": "ISC",
+   "author": "VideMelo",
+   "repository": "https://github.com/videMelo/jukebox",
+   "keywords": [
+      "discord",
+      "music-bot",
+      "discord-bot"
+   ],
+   "license": "MIT",
+   "workspaces": [
+      "client",
+      "server"
+   ],
+   "private": true,
    "devDependencies": {
-      "eslint": "^8.2.0",
-      "eslint-config-prettier": "^8.6.0",
-      "nodemon": "^2.0.22"
+      "concurrently": "^8.2.0"
    }
 }
