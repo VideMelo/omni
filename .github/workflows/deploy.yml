@@ -1,0 +1,20 @@
+name: Push to EC2
+on: [push]
+jobs:
+  deploy:
+    name: Deploy Server to EC2
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout the files
+      uses: actions/checkout@v3
+
+    - name: Copy files with SSH
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{secrets.SSH_KEY}}
+        ARGS: "-rltgoDzvO --delete"
+        SOURCE: "server/"
+        REMOTE_HOST: ${{secrets.REMOTE_HOST}}
+        REMOTE_USER: ${{secrets.REMOTE_USER}}
+        TARGET: ${{secrets.TARGET_DIR}}
+        EXCLUDE: "/client"
