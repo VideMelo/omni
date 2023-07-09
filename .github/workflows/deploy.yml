@@ -18,8 +18,9 @@ jobs:
         TARGET: ${{secrets.TARGET_DIR}}
         EXCLUDE: "client, node_modules, .env, .git"
         SCRIPT_BEFORE: |
+          whoami
           pm2 stop all
         SCRIPT_AFTER: |
+          whoami
           cd ${{secrets.TARGET_DIR}}/server
           npm install
-          pm2 start all
