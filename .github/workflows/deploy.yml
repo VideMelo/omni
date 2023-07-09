@@ -19,8 +19,10 @@ jobs:
         EXCLUDE: "client, node_modules, .env, .git"
         SCRIPT_BEFORE: |
           whoami
+          ls -la
           pm2 stop all
         SCRIPT_AFTER: |
           whoami
+          ls -la
           cd ${{secrets.TARGET_DIR}}/server
           npm install
