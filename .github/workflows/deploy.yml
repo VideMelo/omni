@@ -16,4 +16,5 @@ jobs:
         REMOTE_HOST: ${{secrets.REMOTE_HOST}}
         REMOTE_USER: ${{secrets.REMOTE_USER}}
         TARGET: ${{secrets.TARGET_DIR}}
-        EXCLUDE: "/client"
+        SOURCE: "/server"
+        EXCLUDE: "/node_modules, .env"
