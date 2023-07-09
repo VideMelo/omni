@@ -16,4 +16,10 @@ jobs:
         REMOTE_HOST: ${{secrets.REMOTE_HOST}}
         REMOTE_USER: ${{secrets.REMOTE_USER}}
         TARGET: ${{secrets.TARGET_DIR}}
-        EXCLUDE: "client, /node_modules, .env"
+        EXCLUDE: "client, node_modules, .env, .git"
+        SCRIPT_BEFORE: |
+          pm2 stop all
+        SCRIPT_AFTER: |
+          cd ${{secrets.TARGET_DIR}}/server
+          npm install
+          pm2 start all
