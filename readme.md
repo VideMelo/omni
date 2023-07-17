@@ -1,30 +1,42 @@
-# Jukebox
-
 ## Get Started
 
+### Prerequisites
+- [Node.js v19.X](https://nodejs.org/)
+
 ### Install Packages
-
 ```sh
-npm install
+yarn
 ```
-
-> If an error occurs during the installation, look for the documentation of the packages.
+> **Note:** If you don't have `yarn` installed, install with `npm install -g yarn`
 
 ### Development Setup
-
-Create a `.env` file to set configs.
+#### Server
+Rename `.env.template` to `.env` in `./server` and set the following settings:
 
 ```sh
 # Get this in https://discord.com/developers/applications
-DISCORD_TOKEN=ABCDEFGAIJK.LMNOPQRS.TUVW-XYZ... # Discord Bot Token
-DISCORD_ID=12345678901235 # Discord Bot ID
+DISCORD_TOKEN= # Discord Bot Token
+DISCORD_ID= # Discord Bot ID
+DISCORD_SECRET= # Discord Bot Secret
+DISCORD_REDIRECT= # Discord Redirect URL Callback
 
 # Get this in https://developer.spotify.com/dashboard
-SPOTIFY_ID=abcde1234fghijk5678 # Spotify ID
-SPOTIFY_SECRET=6abcde1234fghijk5678 # Spotify Secret
+SPOTIFY_ID= # Spotify ID
+SPOTIFY_SECRET= # Spotify Secret
+```
+
+#### Client
+Rename `.env.template` to `.env` in `./client` and set the following settings:
+
+```sh
+# Get this in https://discord.com/developers/applications
+NEXT_PUBLIC_DISCORD_ID= # Discord Bot ID
+
+NEXT_PUBLIC_API_URL=http://localhost:3000/api # Your API URL Domain
+NEXT_PUBLIC_SERVER_URL=http://localhost:8080 # Your Server Url Domain
 ```
 
 ### Run
 ```
-npm start
+yarn dev
 ```
