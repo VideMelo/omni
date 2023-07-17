@@ -2,9 +2,12 @@ const Spotify = require('./Spotify');
 const Youtube = require('./Youtube');
 
 class Search {
-   constructor(client, player) {
-      this.spotify = new Spotify(client);
-      this.youtube = new Youtube(client);
+   constructor(client) {
+      this.spotify = new Spotify({
+         id: client.config.SPOTIFY_ID,
+         secret: client.config.SPOTIFY_SECRET,
+      });
+      this.youtube = new Youtube();
    }
 
    /**

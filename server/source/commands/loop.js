@@ -12,19 +12,27 @@ class Loop extends Command {
       try {
          const queue = client.player.get(interaction.guild.id);
 
-         if (client.errors(interaction, {
+         if (
+            client.errors(interaction, {
                errors: ['userVoice', 'inSameVoice', 'emptyQueue'],
                queue,
-            })) return;
+            })
+         )
+            return;
 
-         queue.config.loop = queue.config.loop ? false : queue.config.repeat ? false : true;
-         queue.config.repeat = queue.config.repeat ? false : queue.config.loop ? false : true;
+         queue.setRepeat(
+            queue.config.repeat == 'off'
+               ? 'queue'
+               : queue.config.repeat == 'queue'
+               ? 'track'
+               : 'off'
+         );
 
-         if (!queue.config.loop && !queue.config.repeat) {
+         if (queue.config.repeat == 'off') {
             await interaction.reply('Loop disabled!');
-         } else if (queue.config.loop && !queue.config.repeat) {
+         } else if (queue.config.repeat == 'queue') {
             await interaction.reply('Loop queue enabled!');
-         } else if (!queue.config.loop && queue.config.repeat) {
+         } else if (queue.config.repeat == 'track') {
             await interaction.reply('Loop current track enabled!');
          }
       } catch (error) {

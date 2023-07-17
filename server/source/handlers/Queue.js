@@ -19,18 +19,12 @@ const Track = require('./Track');
 class Queue {
    constructor(client, player) {
       this.node = player;
+      this.client = client;
 
       this.player = createAudioPlayer();
 
       this.list = new Discord.Collection();
       this.current = { index: 0 };
-
-      this.config = {
-         loop: false, // Loop the queue
-         shuffle: false, // Shuffle the queue
-         repeat: false, // Repeat the current track
-         volume: 1,
-      };
 
       this.state = 'idle';
       this.metadata = {
@@ -39,13 +33,19 @@ class Queue {
          channel: null,
          connection: null,
       };
+      this.config = {
+         repeat: 'off', // Repeat the queue (off, track, queue)
+         shuffle: false, // Shuffle the queue
+         volume: 0.5,
+      };
 
       this.duration = 0;
       this.time = 'no time';
 
       this.player.on(AudioPlayerStatus.Idle, () => {
+         this.client.socket.to(this.metadata.guild.id).emit('update-player');
          this.state = 'idle';
-         if (this.idle()) {
+         if (this.end()) {
             this.player.stop();
             this.list.clear();
 
@@ -55,12 +55,11 @@ class Queue {
             this.node.emit('queueEnd', this);
             return;
          }
-         this.play(this.next(), { state: 'update' });
+         this.play(this.next(), { state: 'update', emit: true });
       });
 
       this.player.on(AudioPlayerStatus.Playing, () => {
          this.state = 'playing';
-         this.node.emit('playing', this, this.current);
       });
    }
 
@@ -140,13 +139,16 @@ class Queue {
 
          if (!track?.url) track.set({ url: await this.node.search.getUrl(track) }); // Set the track url if not defined
 
-         this.current = track; // Set the current track
+         if (!track?.builded) {
+            const info = await ytdl.getInfo(track.url); // Get the video info
+            track.set({ duration: info.videoDetails.lengthSeconds * 1000, builded: true }); // Set the track duration
+         }
 
          // Create a new stream with the track url
          const stream = await ytdl(track.url, {
-            highWaterMark: 1 << 25,
+            highWaterMark: 1 << 25, 
             filter: 'audioonly',
-            quality: 'highestaudio',
+            quality: 'highestaudio', 
          });
 
          let seek = metadata?.seek / 1000 || 0; // if seek is not defined, set to 0
@@ -170,10 +172,16 @@ class Queue {
          });
 
          resource.volume.setVolume(this.config.volume); // Set the volume
-
          this.metadata.connection.subscribe(this.player); // Subscribe connection to the manager
-
          this.player.play(resource); // Play the resource
+
+         track.set({ position: seek * 1000 }); // Set the track position
+         this.current = track; // Set the current track
+
+         if (state != 'update' || metadata?.emit) {
+            this.node.emit('playing', this, this.current); // Emit playing event
+            this.client.socket.to(this.metadata.guild.id).emit('update-player'); // Emit playing event to socket
+         }
          this.state = 'playing'; // Set the state to playing
       } catch (erro) {
          throw new Error(erro);
@@ -218,22 +226,31 @@ class Queue {
 
    /**
     * Next track in queue
+    * @param {boolean} force - Force next track if in repeat mode
     * @returns {boolean | Track} null if queue is empty, Track if queue is not empty
     */
-   next() {
-      if (this.idle()) return null;
-      if (this.config.repeat) return this.current;
+   next(force = false) {
+      if (this.end()) return null;
+      if (this.config.repeat == 'track' && !force) return this.current;
       if (this.current.index == this.list.size) {
-         if (this.config.loop) {
+         if (this.config.repeat == 'queue') {
             if (this.config.shuffle) {
                this.shuffle(true);
-               return this.list.get(1);
-            } else {
-               return this.list.get(1);
             }
+            return this.list.get(1);
          }
       }
       return this.list.get(this.current.index + 1);
+   }
+
+   previous() {
+      if (this.end()) return null;
+      if (this.current.index == 1) {
+         if (this.config.repeat == 'queue') {
+            return this.list.get(this.list.size);
+         }
+      }
+      return this.list.get(this.current.index - 1);
    }
 
    /**
@@ -285,6 +302,8 @@ class Queue {
          track.index = this.list.size + 1;
          this.list.set(this.list.size + 1, track);
       });
+      this.config.shuffle = true;
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
       return this.list;
    }
 
@@ -297,6 +316,8 @@ class Queue {
          this.list.set(this.list.size + 1, track);
       });
       this.update();
+      this.config.shuffle = false;
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
       return this.list;
    }
 
@@ -320,8 +341,8 @@ class Queue {
     * Check if queue is empty
     * @returns {boolean} true if queue is empty
     */
-   idle() {
-      return this.config.loop ? false : this.current.index == this.list.size;
+   end() {
+      return this.config.repeat == 'queue' ? false : this.current.index == this.list.size;
    }
 
    /**
@@ -330,16 +351,28 @@ class Queue {
     */
    seek(time = 0) {
       this.play(this.current, { state: 'update', seek: time });
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
+   }
+
+   getPosition() {
+      return this.player.state.playbackDuration + this.current?.position || this.current?.position || 0;
    }
 
    pause() {
       this.player.pause();
       this.state = 'paused';
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
    }
 
-   unpause() {
+   resume() {
       this.player.unpause();
       this.state = 'playing';
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
+   }
+
+   setRepeat(mode) {
+      this.config.repeat = mode;
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
    }
 
    /**
@@ -349,6 +382,7 @@ class Queue {
    volume(volume) {
       this.player.state.resource.volume.setVolume(volume);
       this.config.volume = volume;
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
    }
 
    /**

@@ -20,7 +20,7 @@ class pause extends Command {
          await interaction.noReply();
          queue.pause();
       } catch (error) {
-         throw new Error(error);
+         throw new Error(error); 
       }
    }
 }

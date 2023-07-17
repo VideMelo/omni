@@ -1,7 +1,9 @@
 // By VideMelo: https://github.com/videmelo :p
-require('./source/api/index.js');
+require('dotenv').config();
 
 const Bot = require('./source/services/Bot.js');
 const client = new Bot();
 
 client.build();
+
+module.exports = client;

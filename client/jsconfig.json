@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "source/*": ["./source/*"],
+      "components/*": ["./source/components/*"],
+      "assets/*": ["./source/assets/*"],
+      "hooks/*": ["./source/hooks/*"],
+      "screens/*": ["./source/screens/*"],
+    }
+  }
+}

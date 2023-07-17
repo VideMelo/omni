@@ -23,7 +23,7 @@ class Resume extends Command {
          if (queue.state != 'paused')
             return await interaction.replyErro('the queue is not paused!');
 
-         queue.unpause();
+         queue.resume();
          interaction.noReply();
       } catch (error) {
          throw new Error(error);

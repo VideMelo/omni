@@ -1,16 +1,33 @@
+const fs = require('fs');
+
 const express = require('express');
+const bodyParser = require('body-parser');
 
-const Logger = require('../utils/logger');
-
-const port = process.env.PORT || 8080;
-const app = express();
-
-app.get('/api', (req, res) => {
-   res.send({ data: 'Hello World' });
+const api = express();
+const http = require('http');
+const server = http.createServer(api);
+const io = require('socket.io')(server, {
+   cors: {
+      origin: '*',
+   },
 });
 
-app.listen(port, () => {
-   Logger.info(`Server listening on port ${port}`);
+api.use(bodyParser.urlencoded({ extended: true }));
+api.use(bodyParser.json());
+
+// load routes
+fs.readdirSync('./source/api/routes').forEach((file) => {
+   if (file.endsWith('.js')) {
+      const route = require(`./routes/${file}`);
+      api.use(route);
+   }
 });
 
-module.exports = app;
+fs.readdirSync('./source/api/socket').forEach((file) => {
+   if (file.endsWith('.js')) {
+      const event = require(`./socket/${file}`);
+      event(io);
+   }
+});
+
+module.exports = { server, io };

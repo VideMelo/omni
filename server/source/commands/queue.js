@@ -21,7 +21,7 @@ class Queue extends Command {
          const pages = client.embed.pages(tracks);
          const current = queue.list.get(queue.current.index);
          const next =
-            current.index == queue.list.size && queue.config.loop && !queue.config.shuffle
+            current.index == queue.list.size && queue.config.repeat && !queue.config.shuffle
                ? queue.list.get(1)
                : queue.list.get(current.index + 1);
          const color = await client.embed.color(current.thumbnail);

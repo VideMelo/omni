@@ -4,10 +4,10 @@ const Logger = require('../utils/logger');
 const Track = require('./Track');
 
 class Spotify {
-   constructor(client) {
+   constructor({id, secret}) {
       this.api = new SpotifyWebApi({
-         clientId: client.config.SPOTIFY_ID,
-         clientSecret: client.config.SPOTIFY_SECRET,
+         clientId: id,
+         clientSecret: secret,
       });
 
       this.expiration;

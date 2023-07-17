@@ -7,7 +7,7 @@ class Embed {
       description = '',
       fields = [],
       thumbnail = '',
-      color = 'BA3737',
+      color = 'FFC619',
       timestamp = false,
       author = '',
       footer = 0,
@@ -39,7 +39,7 @@ class Embed {
 
    // get the most present color in an image
    async color(image) {
-      return image ? (await Vibrant.from(image).getSwatches())?.Vibrant?.hex : 'BA3737';
+      return image ? (await Vibrant.from(image).getSwatches())?.Vibrant?.hex : 'FFC619';
    }
 }
 

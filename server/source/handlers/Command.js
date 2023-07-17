@@ -18,7 +18,7 @@ class Command extends SlashCommandBuilder {
    autocomplete({ client }) {
       Logger.erro(`${this.name}.js - An 'autocomplete' method is required`);
       throw new Error();
-   }
+   } 
 
    execute({ client }) {
       Logger.erro(`${this.name}.js - An 'execute' method is required`);

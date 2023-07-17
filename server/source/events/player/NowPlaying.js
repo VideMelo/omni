@@ -30,6 +30,7 @@ class NowPlaying extends Event {
          queue.metadata.message = message;
          await last?.delete();
       } catch (error) {
+         if (error.code == 10008) return;
          Logger.erro(error);
       }
    }

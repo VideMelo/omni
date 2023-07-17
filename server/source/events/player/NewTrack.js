@@ -6,7 +6,9 @@ class NewTrack extends Event {
    }
 
    async execute(client, queue, track) {
-      if (queue.current.index == 0) return;
+      if (!queue.metadata.channel) return;
+      if (queue.list.size == 1) return;
+      
       const color = await client.embed.color(track.thumbnail);
 
       const Embed = client.embed.new({
@@ -36,7 +38,7 @@ class NewTrack extends Event {
          ],
       });
 
-      await this.metadata.channel.send({
+      await queue.metadata.channel.send({
          embeds: [Embed],
       });
    }

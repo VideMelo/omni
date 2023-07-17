@@ -7,6 +7,8 @@ const fs = require('node:fs');
 
 const Logger = require('../utils/logger');
 
+const { server, io } = require('../api');
+
 const Button = require('../modules/button');
 const Embed = require('../modules/embed');
 const Errors = require('../modules/errors');
@@ -38,6 +40,8 @@ class Bot extends Discord.Client {
       this.LoadCommands();
 
       this.LoadInteractions();
+
+      this.socket = io;
    }
 
    LoadEvents() {
@@ -131,7 +135,10 @@ class Bot extends Discord.Client {
 
    async build() {
       try {
-         this.login(this.config.DISCORD_TOKEN);
+         await this.login(this.config.DISCORD_TOKEN);
+         server.listen(this.config.PORT, () => {
+            Logger.done(`API is running on port: ${this.config.PORT}`);
+         });
       } catch (error) {
          Logger.erro(`Error logging in.`);
          throw new Error(error);

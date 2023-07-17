@@ -10,7 +10,7 @@ yarn
 > **Note:** If you don't have `yarn` installed, install with `npm install -g yarn`
 
 ### Development Setup
-Rename `.env.template` to `.env` in `./server` and configure the following settings:
+Rename `.env.template` to `.env` in `./server` and set the following settings:
 
 ```sh
 # Get this in https://discord.com/developers/applications

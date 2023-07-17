@@ -8,6 +8,7 @@ class NewList extends Event {
    }
 
    async execute(client, queue, list) {
+      if (!queue.metadata.channel) return;
       const color = await client.embed.color(list?.thumbnail);
 
       const Embed = client.embed.new({
