@@ -3,7 +3,7 @@ const nextConfig = {
    rewrites: async () => [
       {
          source: '/api/:path*',
-         destination: 'http://localhost:8080/api/:path*',
+         destination: `${process.env.NEXT_PUBLIC_SERVER_URL}/api/:path*`,
       },
    ],
 
@@ -18,14 +18,14 @@ const nextConfig = {
       config.module.rules.push({
          test: /\.svg$/,
          use: ['@svgr/webpack'],
-      })
+      });
 
-      return config
+      return config;
    },
 
    images: {
-      domains: ['cdn.discordapp.com', 'cdn.discord.com']
+      domains: ['cdn.discordapp.com', 'cdn.discord.com'],
    },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
