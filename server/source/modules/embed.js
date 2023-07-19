@@ -38,8 +38,8 @@ class Embed {
    }
 
    // get the most present color in an image
-   async color(image) {
-      return image ? (await Vibrant.from(image).getSwatches())?.Vibrant?.hex : 'FFC619';
+   async color(image, type = 'Vibrant') {
+      return image ? (await Vibrant.from(image).getSwatches())?.[type]?.hex : 'FFC619';
    }
 }
 

@@ -1,5 +1,5 @@
 {
-   "name": "jukebox",
+   "name": "omni",
    "description": "A Discord Music Bot",
    "version": "1.0.0",
    "scripts": {
@@ -10,7 +10,7 @@
    "main": "index.js",
    "type": "commonjs",
    "author": "VideMelo",
-   "repository": "https://github.com/videMelo/jukebox",
+   "repository": "https://github.com/videMelo/omni",
    "keywords": [
       "discord",
       "music-bot",

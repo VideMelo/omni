@@ -18,7 +18,7 @@ export default function Header() {
    const { push } = useRouter();
 
    const options = [
-      { name: 'GitHub', url: 'https://github.com/VideMelo/jukebox' },
+      { name: 'GitHub', url: 'https://github.com/VideMelo/omni' },
       { name: 'About', url: '/about' },
       { name: 'Dashboard', url: '/dashboard', isPrivate: true },
    ];
@@ -43,7 +43,7 @@ export default function Header() {
    return (
       <header className="w-full h-16 my-6 text-white flex items-center justify-center">
          <div className="container px-6 flex items-center justify-between">
-            <div className="w-16 h-16 relative before:top-0 before:left-0 before:absolute before:rounded-full before:block before:w-16 before:h-16 before:shadow-indigo-300 before:opacity-40 before:shadow-3xl before:animate-pulse-size">
+            <div className="w-16 h-16 relative before:left-1/4 before:absolute before:rounded-full before:block before:top-1/4 before:opacity-20 before: before:w-10 before:h-10 before:shadow-indigo-300 before:shadow-3xl before:animate-pulse-size">
                <Link href={'/'}>
                   <Logo className="w-16 h-16 absolute" />
                </Link>
@@ -57,7 +57,7 @@ export default function Header() {
                         <li key={index} className="mx-2">
                            <Link
                               href={option.url}
-                              className="text-[16px] hover:opacity-90 tracking-widest font-light opacity-70 py-2 px-4 hover:border-transparent rounded-lg"
+                              className="text-[16px] hover:opacity-90 tracking-widest opacity-70 py-2 px-4 hover:border-transparent rounded-lg"
                            >
                               {option.name}
                            </Link>

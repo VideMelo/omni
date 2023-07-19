@@ -1,7 +1,7 @@
 ## Get Started
 
 ### Prerequisites
-- [Node.js v19.X](https://nodejs.org/)
+- [Node.js v19.4.X](https://nodejs.org/)
 
 ### Install Packages
 ```sh

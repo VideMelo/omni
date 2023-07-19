@@ -23,31 +23,37 @@ const openPopup = (url) => {
    );
 };
 
-const getAuthUrl = ({ authUrl, clientId, redirectUri, scopes, state }) => {
-   scopes = scopes.join(' ');
-   return `${authUrl}?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&state=${state}`;
+const getAuthUrl = ({ authUrl, clientId, redirectUri, scopes, guildId, state, auth = 'login' }) => {
+   scopes = scopes.join('+');
+   if (auth === 'invite') {
+      return `${authUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&guild_id=${guildId}&disable_guild_select=true&permissions=8`;
+   } else if (auth == 'login') {
+      return `${authUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&state=${state}`;
+   }
 };
 
 export default function useOAuth2(props) {
-   const getAuth = useCallback(() => {
-      const state = randomString();
-      localStorage.setItem('auth-state', state);
-
-      openPopup(getAuthUrl({ ...props, state }));
-   }, [props]);
+   const getAuth = useCallback(
+      (data = {}) => {
+         const state = randomString();
+         localStorage.setItem('auth-state', state);
+         
+         openPopup(getAuthUrl({ ...props, ...data, state }));
+      },
+      [props]
+   );
 
    if (typeof window !== 'undefined') {
       window.addEventListener('message', (event) => {
-         console.log('OAuth2: Message received');
          if (event.data.type === 'auth-success') {
-            console.log('OAuth2: Success');
-            const { token, expires } = event.data;
             localStorage.removeItem('auth-state');
 
-            props.onSuccess(token, expires);
+            if (props?.onSuccess) props?.onSuccess(event.data);
+            window.removeEventListener('message', () => {});
          } else if (event.data.type === 'auth-error') {
             console.error('OAuth2: Error');
-            props.onError();
+            if (props?.onError) props?.onError(event.data);
+            window.removeEventListener('message', () => {});
          }
       });
    }

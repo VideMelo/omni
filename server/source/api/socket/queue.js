@@ -2,11 +2,9 @@ module.exports = (io) => {
    io.on('connection', (socket) => {
       const client = require('../../../');
       socket.on('get-queue', (callback) => {
-         console.log(`user: ${socket.user} with ${socket.id} get-queue, in guild: ${socket.guild}`);
-
-         console.log(socket.guild);
          const queue = client.player.get(socket.guild);
          if (!queue) return;
+         console.log(`user: ${socket.user} with ${socket.id} get-queue, in guild: ${socket.guild}`);
 
          callback({
             list: queue.list,

@@ -6,7 +6,7 @@ const api = axios.create({
 
 export const getAuth = (code) => {
    if (!code) return;
-   return api.post('/auth', { code });
+   return 
 };
 
 export default api;

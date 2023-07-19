@@ -8,14 +8,11 @@ import { getCookie } from 'cookies-next';
 export default function Guild() {
    const [guild, setGuild] = useState(null);
    useEffect(() => {
-      const token = getCookie('auth-token');
       const id = window.location.pathname.split('/')[2];
-      socket.emit('get-user', token, (user) => {
-         socket.emit('leave-guild');
-         socket.emit('get-guild', id, (guild) => {
-            socket.emit('join-guild', { guild: id, user: user.id });
-            setGuild(guild);
-         });
+      socket.emit('leave-guild');
+      socket.emit('get-guild', id, (guild) => {
+         socket.emit('join-guild', { guild: id });
+         setGuild(guild);
       });
    }, []);
 

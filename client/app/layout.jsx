@@ -1,10 +1,8 @@
 import 'source/styles/globals.css';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-   title: 'Jukebox',
+   title: 'Omni - Listen music with your friends!',
+   description: 'Omni is a discord music bot that allows you to listen to music with your friends in a voice channel.',
 };
 
 import Header from 'components/Header';
@@ -12,7 +10,7 @@ import Header from 'components/Header';
 export default function RootLayout({ children }) {
    return (
       <html lang="en" id="root">
-         <body className={inter.className}>
+         <body>
             <Header />
             {children}
          </body>

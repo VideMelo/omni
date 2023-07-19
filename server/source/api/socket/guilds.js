@@ -4,14 +4,13 @@ module.exports = (io) => {
    io.on('connection', (socket) => {
       const client = require('../../../');
 
-      socket.on('join-guild', ({ user, guild }, callback) => {
-         console.log(`join-guild: ${guild}, user: ${user} with ${socket.id}`);
-
+      socket.on('join-guild', ({ guild }, callback) => {
          const queue = client.player.get(guild);
          if (!queue) return;
 
          socket.join(guild);
          socket.guild = guild;
+         console.log(`join-guild: ${socket.guild}, user: ${socket.user} with ${socket.id}`);
 
          if (typeof callback == 'function') callback({ room: guild, socket: socket.id });
 
@@ -40,11 +39,12 @@ module.exports = (io) => {
                      guild.icon = guild.icon
                         ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`
                         : 'https://cdn.discordapp.com/icons/826747816927428610/8ddfad8a2f50a4dda43ee437e5dfef61.png';
-                     guild.color = await client.embed.color(guild.icon);
+                     guild.color = await client.embed.color(guild.icon, 'LightVibrant');
                      guild.join = client.guilds.cache.get(guild.id) ? false : true;
                      return guild;
                   });
                guilds = await Promise.all(guilds);
+               guilds = guilds.sort((a, b) => (a.join === b.join ? 0 : a.join ? 1 : -1));
                callback(guilds);
             })
             .catch((error) => {

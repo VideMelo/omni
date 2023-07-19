@@ -5,17 +5,16 @@ import useAuth from 'hooks/use-auth';
 
 function SingInButton(props) {
    const login = useAuth({
-      redirectUri: `${process.env.NEXT_PUBLIC_API_URL}/auth`,
+      redirectUri: `${process.env.NEXT_PUBLIC_API_URL}/auth-login`,
       clientId: process.env.NEXT_PUBLIC_DISCORD_ID,
       authUrl: 'https://discord.com/api/oauth2/authorize',
       scopes: ['identify', 'guilds'],
 
-      onSuccess: (token, expires) => {
-         setCookie('auth-token', token, {
-            expires: new Date(expires),
+      onSuccess: (data) => {
+         setCookie('auth-token', data.token, {
+            expires: new Date(data.expires),
             path: '/',
          });
-         console.log('cookie set');
          props.onSuccess();
       },
       oneError: () => props.onError(),

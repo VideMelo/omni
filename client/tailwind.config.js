@@ -7,8 +7,16 @@ module.exports = {
    ],
    theme: {
       extend: {
+            colors: {
+               'blue-100': '#A2B3FF',
+               'blue-200': '#839AFF',
+               'blue-300': '#738DFF',
+               'blue-400': '#6480FF',
+               'blue-500': '#486AFF',
+               'blue-600': '#3257FE',
+            },
          boxShadow: {
-            '3xl': '0 15px 50px 0px rgba(0, 0, 0, 0.3)',
+            '3xl': '0 15px 50px 32px rgba(0, 0, 0, 0.3)',
          },
          keyframes: {
             'pulse-size': {
