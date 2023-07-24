@@ -13,6 +13,11 @@ class Player extends EventEmitter {
       this.search = new Search(client, this);
    }
 
+   /**
+    *
+    * @param {String} id - Guild id
+    * @returns {Queue} - Guild queue
+    */
    get(id) {
       return this.handler.get(id);
    }

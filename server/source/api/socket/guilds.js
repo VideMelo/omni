@@ -116,5 +116,16 @@ module.exports = (io) => {
          queue.connect(channel);
          if (typeof callback == 'function') callback(queue.metadata);
       });
+
+      socket.on('leave-voiceChannel', (callback) => {
+         console.log(
+            `user: ${socket.user} with ${socket.id} leave-voiceChannel, guild: ${socket.guild}`
+         );
+         const queue = client.player.get(socket.guild);
+         if (!queue) return;
+
+         queue.disconnect();
+         if (typeof callback == 'function') callback(queue.metadata);
+      });
    });
 };

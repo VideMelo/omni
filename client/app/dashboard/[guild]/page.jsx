@@ -83,7 +83,8 @@ export default function Guild() {
                            }
                            onClick={() => {
                               if (channel.id == queue.metadata.voice?.id)
-                                 return socket.emit('leave-VoiceChannel');
+                                 return socket.emit('leave-voiceChannel');
+
                               socket.emit('join-voiceChannel', channel.id);
                            }}
                         >
@@ -93,59 +94,103 @@ export default function Guild() {
                   </div>
                ))}
             </div>
-            <div className="flex flex-col w-full">
-               <div className="flex items-center justify-between gap-2 w-full">
-                  <span className="text-white text-2xl font-bold capitalize">{view}</span>
+            {queue.metadata.voice ? (
+               <div className="flex flex-col w-full">
+                  <div className="flex items-center justify-between gap-2 w-full">
+                     <span className="text-white text-2xl font-bold capitalize">{view}</span>
 
-                  <div className="flex items-center">
-                     <svg
-                        className={view === 'queue' ? 'hidden' : 'mr-5 cursor-pointer'}
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        onClick={() => setView('queue')}
-                     >
-                        <path
-                           d="M6 6L18 18M6 18L18 6L6 18Z"
-                           stroke="#FFFFFF"
-                           strokeWidth="2"
-                           strokeLinecap="round"
-                           strokeLinejoin="round"
-                        />
-                     </svg>
-                     <div className="flex w-80 cursor-text rounded-2xl bg-[#191919] border-[1.25px] px-4 py-3 !outline-none border-[#393939] items-center bg-color">
-                        <Search
-                           className="w-6 h-6 cursor-pointer"
-                           onClick={(event) => {
-                              handleSearch(event.target.value);
-                           }}
-                        />
-                        <input
-                           type="text"
-                           id="search"
-                           autoComplete="off"
-                           placeholder="Search a track"
-                           className="!bg-transparent !text-white w-full ml-5 !outline-none placeholder:opacity-50"
-                           onKeyUp={(event) => {
-                              if (event.key === 'Enter') handleSearch(event.target.value);
-                           }}
-                        />
+                     <div className="flex items-center">
+                        <svg
+                           className={view === 'queue' ? 'hidden' : 'mr-5 cursor-pointer'}
+                           width="24"
+                           height="24"
+                           viewBox="0 0 24 24"
+                           fill="none"
+                           onClick={() => setView('queue')}
+                        >
+                           <path
+                              d="M6 6L18 18M6 18L18 6L6 18Z"
+                              stroke="#FFFFFF"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                           />
+                        </svg>
+                        <div className="flex w-80 cursor-text rounded-2xl bg-[#191919] border-[1.25px] px-4 py-3 !outline-none border-[#393939] items-center bg-color">
+                           <Search
+                              className="w-6 h-6 cursor-pointer"
+                              onClick={(event) => {
+                                 handleSearch(event.target.value);
+                              }}
+                           />
+                           <input
+                              type="text"
+                              id="search"
+                              autoComplete="off"
+                              placeholder="Search a track"
+                              className="!bg-transparent !text-white w-full ml-5 !outline-none placeholder:opacity-50"
+                              onKeyUp={(event) => {
+                                 if (event.key === 'Enter') handleSearch(event.target.value);
+                              }}
+                           />
+                        </div>
                      </div>
                   </div>
-               </div>
-               <hr className="w-full border-[#393939] my-7" />
-               <ul className="flex flex-col h-[30vw] overflow-y-auto gap-4">
-                  {view === 'search'
-                     ? search.data.type == 'track'
-                        ? search?.items.map((track, index) => (
+                  <hr className="w-full border-[#393939] my-7" />
+                  <ul className="flex flex-col h-[30vw] overflow-y-auto gap-4">
+                     {view === 'search'
+                        ? search.data.type == 'track'
+                           ? search?.items.map((track, index) => (
+                                <li
+                                   key={index}
+                                   className="flex flex-col cursor-pointer w-full"
+                                   onClick={() => {
+                                      socket.emit('new-track', track, () => {
+                                         Event('New Track Added!');
+                                      });
+                                   }}
+                                >
+                                   <div className="flex gap-2 items-center">
+                                      <Image
+                                         src={track.thumbnail}
+                                         alt="Track thumbnail"
+                                         width={55}
+                                         height={55}
+                                         className="rounded-[3px]"
+                                      />
+                                      <div className="flex flex-col w-full">
+                                         <span className="text-white text-base font-bold">
+                                            {track.name}
+                                         </span>
+                                         <span className="text-white text-sm opacity-50">
+                                            {track.artists}
+                                         </span>
+                                      </div>
+                                      <svg
+                                         xmlns="http://www.w3.org/2000/svg"
+                                         className="h-6 w-6 text-[#BBC1C4]"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                      >
+                                         <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M12 4v16m8-8H4"
+                                         />
+                                      </svg>
+                                   </div>
+                                   <hr className="w-full border-[#393939] my-5" />
+                                </li>
+                             ))
+                           : null
+                        : queue.list.map((track, index) => (
                              <li
                                 key={index}
                                 className="flex flex-col cursor-pointer w-full"
                                 onClick={() => {
-                                   socket.emit('new-track', track, () => {
-                                      Event('New Track Added!');
-                                   });
+                                   socket.emit('skip-to', track.index);
                                 }}
                              >
                                 <div className="flex gap-2 items-center">
@@ -156,7 +201,7 @@ export default function Guild() {
                                       height={55}
                                       className="rounded-[3px]"
                                    />
-                                   <div className="flex flex-col w-full">
+                                   <div className="flex flex-col">
                                       <span className="text-white text-base font-bold">
                                          {track.name}
                                       </span>
@@ -164,55 +209,17 @@ export default function Guild() {
                                          {track.artists}
                                       </span>
                                    </div>
-                                   <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-6 w-6 text-[#BBC1C4]"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                   >
-                                      <path
-                                         strokeLinecap="round"
-                                         strokeLinejoin="round"
-                                         strokeWidth={2}
-                                         d="M12 4v16m8-8H4"
-                                      />
-                                   </svg>
                                 </div>
                                 <hr className="w-full border-[#393939] my-5" />
                              </li>
-                          ))
-                        : null
-                     : queue.list.map((track, index) => (
-                          <li
-                             key={index}
-                             className="flex flex-col cursor-pointer w-full"
-                             onClick={() => {
-                                socket.emit('skip-to', track);
-                             }}
-                          >
-                             <div className="flex gap-2 items-center">
-                                <Image
-                                   src={track.thumbnail}
-                                   alt="Track thumbnail"
-                                   width={55}
-                                   height={55}
-                                   className="rounded-[3px]"
-                                />
-                                <div className="flex flex-col">
-                                   <span className="text-white text-base font-bold">
-                                      {track.name}
-                                   </span>
-                                   <span className="text-white text-sm opacity-50">
-                                      {track.artists}
-                                   </span>
-                                </div>
-                             </div>
-                             <hr className="w-full border-[#393939] my-5" />
-                          </li>
-                       ))}
-               </ul>
-            </div>
+                          ))}
+                  </ul>
+               </div>
+            ) : (
+               <div className="flex justify-center items-center opacity-70 w-full">
+                  Select a voice channel to start listening to music!
+               </div>
+            )}
          </div>
          <div className="flex flex-wrap justify-center gap-4 fixed bottom-0 left-0 w-full">
             {showEvent && (

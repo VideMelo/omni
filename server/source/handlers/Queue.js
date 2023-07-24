@@ -80,7 +80,10 @@ class Queue {
    }
 
    disconnect() {
+      if (!this.metadata.connection) return;
       this.metadata.connection.destroy();
+      this.data({ connection: null, voice: null });
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
    }
 
    /**
@@ -280,9 +283,9 @@ class Queue {
 
    clear() {
       this.list.clear();
-      this.current.index = 1;
-      this.list.set(1, this.current);
-      this.tim;
+      this.update();
+      this.current = { index: 0 };
+      this.time = 'no time';
    }
 
    /**
