@@ -82,7 +82,10 @@ class Search {
 
 class Result {
    constructor(data) {
-      this.data = data;
+      this.data = {
+         ...data,
+         type: data.type == 'search' ? 'track' : data.type,
+      };
       this.type = data.type;
       this.items = Array.isArray(data) ? data : data.tracks || [data];
       this.starter = data.starter || this?.items[0]?.id || data?.id;

@@ -46,6 +46,7 @@ module.exports = (io) => {
 
       socket.on('new-track', async (track, callback) => {
          const queue = client.player.get(socket.guild);
+         console.log(queue);
          if (!queue) return;
 
          queue.new(track, { type: 'track' });

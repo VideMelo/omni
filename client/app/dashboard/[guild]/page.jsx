@@ -20,10 +20,10 @@ export default function Guild() {
    const [view, setView] = useState('queue'); // 'queue' | 'search
 
    function handleSearch(query) {
-      setView('search');
       if (!query) return setSearch(null);
       socket.emit('search', query, (data) => {
          setSearch(data);
+         setView('search');
       });
    }
 
@@ -39,11 +39,19 @@ export default function Guild() {
       });
       socket.on('update-player', () => {
          socket.emit('get-queue', setQueue);
-         setTimeout(() => {
-            socket.emit('get-voiceChannels', setChannels);
-         }, 1000);
+         socket.emit('get-voiceChannels', setChannels);
       });
    }, []);
+
+   const [showEvent, setShowEvent] = useState(false);
+   const [eventValue, setEventValue] = useState('Event');
+   function Event(value) {
+      setEventValue(value);
+      setShowEvent(true);
+      setTimeout(() => {
+         setShowEvent(false);
+      }, 2000);
+   }
 
    if (!guild || !channels || !queue) return null;
    console.log(guild, channels, queue, search);
@@ -129,13 +137,15 @@ export default function Guild() {
                <hr className="w-full border-[#393939] my-7" />
                <ul className="flex flex-col h-[30vw] overflow-y-auto gap-4">
                   {view === 'search'
-                     ? search.type == 'track'
+                     ? search.data.type == 'track'
                         ? search?.items.map((track, index) => (
                              <li
                                 key={index}
                                 className="flex flex-col cursor-pointer w-full"
                                 onClick={() => {
-                                   socket.emit('skip-to', track.index);
+                                   socket.emit('new-track', track, () => {
+                                      Event('New Track Added!');
+                                   });
                                 }}
                              >
                                 <div className="flex gap-2 items-center">
@@ -178,7 +188,7 @@ export default function Guild() {
                              key={index}
                              className="flex flex-col cursor-pointer w-full"
                              onClick={() => {
-                                socket.emit('play', track);
+                                socket.emit('skip-to', track);
                              }}
                           >
                              <div className="flex gap-2 items-center">
@@ -204,7 +214,14 @@ export default function Guild() {
                </ul>
             </div>
          </div>
-         <div className="flex flex-wrap gap-4 fixed bottom-0 left-0 w-full">
+         <div className="flex flex-wrap justify-center gap-4 fixed bottom-0 left-0 w-full">
+            {showEvent && (
+               <button className="h-[60px] px-7 rounded-lg cursor-pointer bg-blue-500 shadow-2xl max-sm:px-5 max-sm:w-full">
+                  <span className="flex items-center justify-center text-white w-full font-medium text-right whitespace-nowrap text-lg max-sm:text-[13px]">
+                     {eventValue}
+                  </span>
+               </button>
+            )}
             <Player data={queue} />
          </div>
       </main>
