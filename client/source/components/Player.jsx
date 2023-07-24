@@ -3,7 +3,7 @@
 import React from 'react';
 import { Slider } from '@mui/material';
 
-import { socket } from '../services/socket';
+import socket from '../services/socket';
 
 import Shuffle from 'assets/icons/shuffle.svg';
 import Previous from 'assets/icons/previous.svg';
@@ -17,7 +17,7 @@ import VolumeLow from 'assets/icons/volume-low.svg';
 import VolumeNormal from 'assets/icons/volume-normal.svg';
 import VolumeHigh from 'assets/icons/volume-high.svg';
 
-export default function Player() {
+export default function Player({ data }) {
    const [playing, setPlaying] = React.useState(false);
    const [shuffle, setShuffle] = React.useState(false);
    const [repeat, setRepeat] = React.useState('off');
@@ -35,28 +35,23 @@ export default function Player() {
    }
 
    React.useEffect(() => {
-      socket.on('update-player', update);
-      update();
       socket.on('disconnect', () => setPlaying(false));
    }, []);
 
-   async function update() {
-      socket.emit('get-queue', (data) => {
-         console.log(data);
-         if (!data) return;
-         const { config, playing, state, current } = data;
+   React.useEffect(() => {
+      if (!data) return;
+      const { config, playing, state, current } = data;
 
-         setShuffle(config.shuffle);
-         setRepeat(config.repeat);
-         setVolume(config.volume);
+      setShuffle(config.shuffle);
+      setRepeat(config.repeat);
+      setVolume(config.volume);
 
-         setDuration(current?.duration / 1000 || 0);
-         setPosition(current?.position / 1000 || 0);
+      setDuration(current?.duration / 1000 || 0);
+      setPosition(current?.position / 1000 || 0);
 
-         setPlaying(playing);
-         setIdle(state == 'idle');
-      });
-   }
+      setPlaying(playing);
+      setIdle(state == 'idle');
+   }, [data]);
 
    React.useEffect(() => {
       if (!playing) return;

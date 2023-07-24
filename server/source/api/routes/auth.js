@@ -1,11 +1,11 @@
 const route = require('express').Router();
 const axios = require('axios');
 
-route.get('/api/auth-login', (req, res) => {
+route.get('/auth-login', (req, res) => {
    const code = req.query.code;
    const state = req.query.state;
-   
-   if (!code || !state) res.status(400).send({ error: 'Invalid request!' });
+
+   if (!code || !state) return res.status(400).send({ error: 'Invalid request!' });
 
    const data = new URLSearchParams({
       client_id: process.env.DISCORD_ID,
@@ -36,7 +36,6 @@ route.get('/api/auth-login', (req, res) => {
             </script>
          `);
       })
-
       .catch((error) => {
          console.log(error);
          res.send(`
@@ -53,9 +52,9 @@ route.get('/api/auth-login', (req, res) => {
       });
 });
 
-route.get('/api/auth-guild', (req, res) => {
+route.get('/auth-guild', (req, res) => {
    const guild = req.query.guild_id;
-   if (!guild) res.status(400).send({ error: 'Invalid request!' });
+   if (!guild) return res.status(400).send({ error: 'Invalid request!' });
 
    res.send(`
          <script>

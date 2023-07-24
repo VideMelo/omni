@@ -17,7 +17,7 @@ const { Result } = require('./Search');
 const Track = require('./Track');
 
 class Queue {
-   constructor(client, player) {
+   constructor(client, player, guild) {
       this.node = player;
       this.client = client;
 
@@ -29,9 +29,9 @@ class Queue {
       this.state = 'idle';
       this.metadata = {
          voice: null,
-         guild: null,
          channel: null,
          connection: null,
+         guild,
       };
       this.config = {
          repeat: 'off', // Repeat the queue (off, track, queue)
@@ -74,7 +74,8 @@ class Queue {
          guildId: voice.guild.id,
          adapterCreator: voice.guild.voiceAdapterCreator,
       });
-      this.data({ connection });
+      this.data({ connection, voice });
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
       return connection;
    }
 
@@ -117,6 +118,7 @@ class Queue {
          // Check if the track is valid
          if (!track) return;
          if (track instanceof Result) track = track.type == 'search' ? track.tracks[0] : track;
+         if (track instanceof Object && track.type == 'track') track = new Track(track);
          if (track instanceof Track)
             if (!track?.url) track.set({ url: await this.node.search.getUrl(track) });
          if (typeof track == 'string') {
@@ -146,9 +148,9 @@ class Queue {
 
          // Create a new stream with the track url
          const stream = await ytdl(track.url, {
-            highWaterMark: 1 << 25, 
+            highWaterMark: 1 << 25,
             filter: 'audioonly',
-            quality: 'highestaudio', 
+            quality: 'highestaudio',
          });
 
          let seek = metadata?.seek / 1000 || 0; // if seek is not defined, set to 0
@@ -196,8 +198,9 @@ class Queue {
     */
    new(body, options = {}) {
       if (!body instanceof Track && !body instanceof Result) return;
+      if (body instanceof Object && body.type == 'track') body = new Track(body);
       let track;
-      if (options.type == 'list') {
+      if (options.type == 'list' || body.type == 'list') {
          body = { ...body, requester: options?.requester };
          body.items.forEach((track) => {
             track.set({
@@ -209,7 +212,7 @@ class Queue {
          });
          this.node.emit('newList', this, body.data);
          track = this.list.find((track) => body.starter == track.id);
-      } else if (options.type == 'track' || options.type == 'search') {
+      } else if (options.type == 'track' || options.type == 'search' || body.type == 'track') {
          body.set({
             index: this.list.size + 1,
             order: this.list.size + 1,
@@ -221,6 +224,7 @@ class Queue {
       }
 
       this.update();
+      this.client.socket.to(this.metadata.guild.id).emit('update-player');
       return track;
    }
 
@@ -355,7 +359,9 @@ class Queue {
    }
 
    getPosition() {
-      return this.player.state.playbackDuration + this.current?.position || this.current?.position || 0;
+      return (
+         this.player.state.playbackDuration + this.current?.position || this.current?.position || 0
+      );
    }
 
    pause() {
@@ -380,8 +386,8 @@ class Queue {
     * @param {number} volume - volume in number 0-1
     */
    volume(volume) {
-      this.player.state.resource.volume.setVolume(volume);
       this.config.volume = volume;
+      if (this.player.state.resource) this.player.state.resource.volume.setVolume(volume);
       this.client.socket.to(this.metadata.guild.id).emit('update-player');
    }
 

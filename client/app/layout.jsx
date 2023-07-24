@@ -5,13 +5,13 @@ export const metadata = {
    description: 'Omni is a discord music bot that allows you to listen to music with your friends in a voice channel.',
 };
 
-import Header from 'components/Header';
+import HomeHeader from 'source/components/Header';
 
 export default function RootLayout({ children }) {
    return (
       <html lang="en" id="root">
          <body>
-            <Header />
+            <HomeHeader />
             {children}
          </body>
       </html>

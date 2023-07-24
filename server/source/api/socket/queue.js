@@ -6,20 +6,57 @@ module.exports = (io) => {
          if (!queue) return;
          console.log(`user: ${socket.user} with ${socket.id} get-queue, in guild: ${socket.guild}`);
 
-         callback({
-            list: queue.list,
-            playing: queue.state == 'playing' ? true : false,
-            state: queue.state,
-            current: {
-               ...queue.current,
-               position: queue.getPosition(),
-            },
-            metadata: {
-               channel: queue.metadata.channel,
-               voice: queue.metadata.voice,
-            },
-            config: queue.config,
-         });
+         if (typeof callback == 'function')
+            callback({
+               list: queue.list,
+               playing: queue.state == 'playing' ? true : false,
+               state: queue.state,
+               current: {
+                  ...queue.current,
+                  position: queue.getPosition(),
+               },
+               metadata: {
+                  channel: queue.metadata.channel,
+                  voice: queue.metadata.voice,
+               },
+               config: queue.config,
+            });
+      });
+
+      socket.on('search', async (query, callback) => {
+         const result = await client.player.search.list(query);
+         if (typeof callback == 'function') callback(result);
+      });
+
+      socket.on('play', async (track, callback) => {
+         const queue = client.player.get(socket.guild);
+         if (!queue) return;
+
+         if (track instanceof Object) {
+            queue.play(track, { state: 'update', emit: true });
+         } else {
+            const result = await client.player.search.get(track);
+            if (result instanceof Object) {
+               queue.play(result, { state: 'update', emit: true });
+            } else {
+               if (typeof callback == 'function') callback(result);
+            }
+         }
+      });
+
+      socket.on('new-track', async (track, callback) => {
+         const queue = client.player.get(socket.guild);
+         if (!queue) return;
+
+         queue.new(track, { type: 'track' });
+         if (typeof callback == 'function') callback(queue.list);
+      });
+
+      socket.on('skip-to', (index) => {
+         const queue = client.player.get(socket.guild);
+         if (!queue) return;
+
+         queue.play(queue.skip(index), { state: 'update', emit: true });
       });
 
       socket.on('pause', () => {

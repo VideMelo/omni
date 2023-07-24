@@ -8,13 +8,12 @@ import { useRouter } from 'next/navigation';
 
 import { getCookie } from 'cookies-next';
 
-import { socket } from 'source/services/socket';
+import socket from 'source/services/socket';
 import Logo from 'assets/scout.svg';
 import Arrow from 'assets/icons/arrow.svg';
 import SingInButton from './SingInButton';
 
 export default function Header() {
-   
    const { push } = useRouter();
 
    const options = [
@@ -41,10 +40,10 @@ export default function Header() {
    }, [isLogged, token]);
 
    return (
-      <header className="w-full h-16 my-6 text-white flex items-center justify-center">
+      <header className="w-full h-16 my-6 mb-24 text-white flex items-center justify-center">
          <div className="container px-6 flex items-center justify-between">
             <div className="w-16 h-16 relative before:left-1/4 before:absolute before:rounded-full before:block before:top-1/4 before:opacity-20 before: before:w-10 before:h-10 before:shadow-indigo-300 before:shadow-3xl before:animate-pulse-size">
-               <Link href={'/'}>
+               <Link href={'/'} className="flex">
                   <Logo className="w-16 h-16 absolute" />
                </Link>
             </div>
@@ -57,7 +56,7 @@ export default function Header() {
                         <li key={index} className="mx-2">
                            <Link
                               href={option.url}
-                              className="text-[16px] hover:opacity-90 tracking-widest opacity-70 py-2 px-4 hover:border-transparent rounded-lg"
+                              className="text-[14px] uppercase hover:opacity-90 tracking-widest opacity-70 py-2 px-4 font-medium hover:border-transparent rounded-lg"
                            >
                               {option.name}
                            </Link>

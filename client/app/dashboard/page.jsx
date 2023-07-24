@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { getCookie } from 'cookies-next';
 
-import { socket } from 'source/services/socket';
+import socket from 'source/services/socket';
 
 import useAuth from 'source/hooks/use-auth';
 

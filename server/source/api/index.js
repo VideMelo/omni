@@ -10,6 +10,7 @@ const io = require('socket.io')(server, {
    cors: {
       origin: '*',
    },
+   path: '/api/socket.io',
 });
 
 api.use(bodyParser.urlencoded({ extended: true }));
@@ -19,7 +20,7 @@ api.use(bodyParser.json());
 fs.readdirSync('./source/api/routes').forEach((file) => {
    if (file.endsWith('.js')) {
       const route = require(`./routes/${file}`);
-      api.use(route);
+      api.use('/api', route);
    }
 });
 

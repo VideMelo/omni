@@ -20,7 +20,7 @@ class Player extends EventEmitter {
    static async init(client) {
       const guilds = await client.guilds.fetch();
       guilds.forEach((guild) => {
-         client.player.handler.set(guild.id, new Queue(client, client.player));
+         client.player.handler.set(guild.id, new Queue(client, client.player, guild));
       });
    }
 

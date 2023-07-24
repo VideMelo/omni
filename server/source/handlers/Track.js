@@ -1,5 +1,15 @@
 class Track {
-   constructor({ source, name, authors = [], thumbnail, duration = 0, url, live = false, query, id }) {
+   constructor({
+      source,
+      name,
+      authors = [],
+      thumbnail,
+      duration = 0,
+      url,
+      live = false,
+      query,
+      id,
+   }) {
       this.source = source;
       this.name = name;
       this.authors = authors;
@@ -13,6 +23,7 @@ class Track {
       this.query = query;
       this.id = id;
       this.type = 'track';
+      this.artists = authors.map((author) => author.name).join(', ');
    }
 
    set(attrs) {
