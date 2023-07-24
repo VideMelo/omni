@@ -5,9 +5,11 @@ const Track = require('./Track');
 class Youtube {
    constructor() {
       this.urls = {
-         pattern: /((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu\.be))\/(watch\?v=(.+)&list=|(playlist)\?list=|watch\?v=)?([^&]+)/,
-         playlist: /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be)?)\/(((watch\?v=)?(.+)(&|\?))?list=|(playlist)\?list=)([^&]+)/,
-         video: /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be)?)(\/(watch\?v=|embed\/|v\/))([\w\-]+)/,
+         pattern:
+            /((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu\.be))\/(watch\?v=(.+)&list=|(playlist)\?list=|watch\?v=)?([^&]+)/,
+         playlist:
+            /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be)?)\/(((watch\?v=)?(.+)(&|\?))?list=|(playlist)\?list=)([^&]+)/,
+         video: /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be)?)(\/(watch\?v=|embed\/|v\/)?)([\w\-]+)/,
       };
    }
 
@@ -18,12 +20,13 @@ class Youtube {
             return await this.getPlaylist(query, { ...options, starter: match[7] });
          } else if (this.urls.video.test(query)) {
             return await this.getVideo(query, options);
-         } 
+         }
       }
    }
 
    async getVideo(url, options = {}) {
-      const video = await youtube.getVideo(url, options)
+      const video = await youtube.getVideo(url, options);
+      console.log(video);
       return new Track(this.build(video));
    }
 
@@ -62,6 +65,9 @@ class Youtube {
    }
 
    build(video) {
+      const thumbnail = video.thumbnail.url.match(/(.*\.jpg)/)
+         ? video.thumbnail.url.match(/(.*\.jpg)/)[0]
+         : video.thumbnail.url;
       return {
          type: 'track',
          id: video.id,
@@ -73,7 +79,7 @@ class Youtube {
                id: video.channel.id,
             },
          ],
-         thumbnail: video.thumbnail.url.match(/(.*\.jpg)/)[0],
+         thumbnail: thumbnail,
          url: video.url,
          duration: video.duration,
          query: video.title,

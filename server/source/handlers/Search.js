@@ -24,6 +24,7 @@ class Search {
    async list(input, options = {}) {
       if (this.isUrl(input)) {
          let info = this.infoUrl(input);
+         console.log(info);
          if (!info) return;
          if (info.stream == 'youtube') {
             const search = await this.youtube.search(input, options);
@@ -74,7 +75,7 @@ class Search {
          return {
             stream: 'youtube',
             type: match[6] ? 'playlist' : 'track',
-            id: match[6] ? match[7] : match[3],
+            id: match[7]
          };
       }
    }
@@ -82,9 +83,10 @@ class Search {
 
 class Result {
    constructor(data) {
+      console.log(data);
       this.data = {
          ...data,
-         type: data.type == 'search' ? 'track' : data.type,
+         type: data?.type == 'search' ? 'track' : data?.type,
       };
       this.type = data.type;
       this.items = Array.isArray(data) ? data : data.tracks || [data];
