@@ -357,8 +357,7 @@ class Queue {
     * @param {number} time - seek time in milliseconds
     */
    seek(time = 0) {
-      this.play(this.current, { state: 'update', seek: time });
-      this.client.socket.to(this.metadata.guild.id).emit('update-player');
+      this.play(this.current, { seek: time, state: 'update', emit: true });
    }
 
    getPosition() {

@@ -3,9 +3,19 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 
+const production = process.env.NODE_ENV === 'production';
+
 const api = express();
-const http = require('http');
-const server = http.createServer(api);
+const protocol = production ? require('https') : require('http');
+const server = production
+   ? protocol.createServer(
+        {
+           key: fs.readFileSync('key.pem'),
+           cert: fs.readFileSync('cert.pem'),
+        },
+        api
+     )
+   : protocol.createServer(api);
 const io = require('socket.io')(server, {
    cors: {
       origin: '*',
