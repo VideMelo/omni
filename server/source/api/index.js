@@ -10,7 +10,6 @@ const io = require('socket.io')(server, {
    cors: {
       origin: '*',
    },
-   path: '/api/socket.io',
 });
 
 api.use(bodyParser.urlencoded({ extended: true }));
