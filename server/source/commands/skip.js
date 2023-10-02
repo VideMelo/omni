@@ -31,7 +31,7 @@ class Skip extends Command {
          if (index) {
             await queue.play(queue.skip(index), { state: 'update', emit: true });
          } else {
-            await queue.play(queue.next(), { state: 'update', emit: true });
+            await queue.play(queue.next(true), { state: 'update', emit: true });
          }
          return await interaction.reply('Skipped');
       } catch (error) {

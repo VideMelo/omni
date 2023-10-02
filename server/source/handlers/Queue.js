@@ -237,23 +237,29 @@ class Queue {
     * @returns {boolean | Track} null if queue is empty, Track if queue is not empty
     */
    next(force = false) {
-      if (this.end() && !force && this.config.repeat != 'off') return null;
+      if (this.end() && !force && this.config.repeat == 'off') return null;
+      console.log(this.end(), this.end() && !force && this.config.repeat == 'off');
       if (this.config.repeat == 'track' && !force) return this.current;
       if (this.end() && this.config.repeat == 'queue') {
          if (this.config.shuffle) this.shuffle(true);
          return this.list.get(1);
       }
-      return this.list.get(this.current.index + 1);
+      let track = this.list.get(this.current.index + 1);
+      if (track) return track;
+      else return null;
    }
 
-   previous() {
-      if (this.end()) return null;
-      if (this.current.index == 1) {
-         if (this.config.repeat == 'queue') {
-            return this.list.get(this.list.size);
-         }
+   previous(force = false) {
+      const start = this.current.index == 1;
+      if (start && !force && this.config.repeat == 'off') return null;
+      if (this.config.repeat == 'track' && !force) return this.current;
+      if (start && this.config.repeat == 'queue') {
+         if (this.config.shuffle) this.shuffle(true);
+         return this.list.get(this.list.size);
       }
-      return this.list.get(this.current.index - 1);
+      let track = this.list.get(this.current.index - 1);
+      if (track) return track;
+      else return null;
    }
 
    /**

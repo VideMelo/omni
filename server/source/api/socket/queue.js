@@ -78,14 +78,13 @@ module.exports = (io) => {
       socket.on('next', () => {
          const queue = client.player.get(socket.guild);
          if (!queue) return;
-
-         queue.play(queue.next(), { state: 'update', emit: true });
+         queue.play(queue.next(true), { state: 'update', emit: true });
       });
 
       socket.on('previous', () => {
          const queue = client.player.get(socket.guild);
          if (!queue) return;
-         queue.play(queue.previous(), { state: 'update', emit: true });
+         queue.play(queue.previous(true), { state: 'update', emit: true });
       });
 
       socket.on('repeat', (value) => {

@@ -11,7 +11,7 @@ class Queue extends Command {
    async execute({ client, interaction }) {
       try {
          const queue = client.player.get(interaction.guild.id);
-
+         console.log(queue.list, queue.current);
          if (client.errors(interaction, { errors: ['emptyQueue'], queue })) return;
 
          const tracks = queue.list.map((track) => {

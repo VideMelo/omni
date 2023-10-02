@@ -9,6 +9,9 @@ class Track {
       live = false,
       query,
       id,
+      requester = {},
+      index,
+      order,
    }) {
       this.source = source;
       this.name = name;
@@ -17,13 +20,14 @@ class Track {
       this.duration = duration;
       this.time = this.MStoHMS(duration);
       this.url = url;
-      this.requester = {};
-      this.index;
+      this.requester = requester;
+      this.index = index;
+      this.order = order;
       this.live = live;
       this.query = query;
       this.id = id;
       this.type = 'track';
-      this.builded = false
+      this.builded = false;
       this.artists = authors.map((author) => author.name).join(', ');
    }
 
