@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import Icon from 'components/Icon.jsx';
+
+import Discord from '../assets/icons/Discord';
 
 export default function Page() {
    return (
@@ -15,8 +16,7 @@ export default function Page() {
             <Link to={`/dashboard`}>
                <button className="h-[60px] px-7 rounded-xl cursor-pointer bg-blue-500 shadow-2xl shadow-[rgba(89,116,236,0.2)] max-sm:px-5 max-sm:w-full">
                   <span className="flex items-center justify-center text-white w-full font-medium text-right whitespace-nowrap text-lg max-sm:text-[13px]">
-                     <Icon src="icons/discord.svg" classNames={{ icon: 'w-6 h-6 mr-5' }} /> Invite
-                     to Discord
+                     <Discord className="w-6 h-6 mr-5" /> Invite to Discord
                   </span>
                </button>
             </Link>

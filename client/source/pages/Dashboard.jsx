@@ -8,7 +8,10 @@ import Auth from '../hooks/auth.js';
 
 import Player from 'components/Player.jsx';
 import QueueItem from 'components/QueueItem.jsx';
-import Icon from 'components/Icon.jsx';
+
+import Plus from '../assets/icons/Plus.jsx';
+import Arrow from '../assets/icons/Arrow.jsx';
+import Search from '../assets/icons/Search.jsx';
 
 export default function Dashboard() {
    const navigate = useNavigate();
@@ -121,15 +124,9 @@ export default function Dashboard() {
                            </span>
                         </div>
                         {guild.join ? (
-                           <Icon
-                              src="icons/plus.svg"
-                              classNames={{ icon: 'h-6 w-6 text-[#BBC1C4]' }}
-                           />
+                           <Plus className="h-6 w-6 text-[#BBC1C4]" />
                         ) : (
-                           <Icon
-                              src="icons/arrow.svg"
-                              classNames={{ icon: 'h-6 w-6 text-[#BBC1C4] -rotate-90' }}
-                           />
+                           <Arrow className="h-6 w-6 text-[#BBC1C4] -rotate-90" />
                         )}
                      </li>
                   ))}
@@ -145,7 +142,7 @@ export default function Dashboard() {
                   <div className="flex w-full cursor-pointer rounded-2xl bg-[#191919] border-[1.25px] px-4 py-3 border-[#393939] items-center bg-color ">
                      <img src={guild.icon} alt="Guild icon" className="rounded-full h-8 w-8" />
                      <span className="text-white w-full ml-5 font-bold">{guild.name}</span>
-                     <Icon src="icons/arrow.svg" classNames={{ icon: 'w-6 h-6' }} />
+                     <Arrow className="w-6 h-6" />
                   </div>
                   <hr className="w-[85%] border-[#393939] my-5" />
                   {channels.map((channel, index) => (
@@ -176,20 +173,17 @@ export default function Dashboard() {
                         <span className="text-white text-2xl font-bold capitalize">{view}</span>
 
                         <div className="flex items-center">
-                           <Icon
-                              src="icons/plus.svg"
-                              classNames={{
-                                 icon:
-                                    view === 'queue'
-                                       ? 'hidden'
-                                       : 'mr-5 w-6 h-6 cursor-pointer rotate-45',
-                              }}
+                           <Plus
+                              className={
+                                 view === 'queue'
+                                    ? 'hidden'
+                                    : 'mr-5 w-6 h-6 cursor-pointer rotate-45'
+                              }
                               onClick={() => setView('queue')}
                            />
                            <div className="flex w-80 cursor-text rounded-2xl bg-[#191919] border-[1.25px] px-4 py-3 !outline-none border-[#393939] items-center bg-color">
-                              <Icon
-                                 src="icons/search.svg"
-                                 classNames={{ icon: 'w-6 h-6 cursor-pointer' }}
+                              <Search
+                                 className="w-6 h-6 cursor-pointer"
                                  onClick={(event) => {
                                     handleSearch(event.target.value);
                                  }}
@@ -217,11 +211,8 @@ export default function Dashboard() {
                                       className="flex hover:bg-white/10 p-2 rounded-lg items-center"
                                    >
                                       <QueueItem item={track} />
-                                      <Icon
-                                         src="icons/plus.svg"
-                                         classNames={{
-                                            icon: 'h-6 w-6 text-[#BBC1C4] cursor-pointer',
-                                         }}
+                                      <Plus
+                                         className="h-6 w-6 text-[#BBC1C4] cursor-pointer"
                                          onClick={() => {
                                             socket.emit('new-track', track, () => {
                                                Event('New Track Added!');

@@ -6,7 +6,8 @@ import socket from 'source/services/socket.js';
 
 import Auth from 'hooks/auth.js';
 
-import Icon from './Icon';
+import Scout from '../assets/icons/Scout';
+import Arrow from '../assets/icons/Arrow';
 
 export default function Header() {
    const navigate = useNavigate();
@@ -57,7 +58,7 @@ export default function Header() {
          <div className="container px-6 flex items-center justify-between">
             <div className="w-16 h-16 relative before:left-1/4 before:absolute before:rounded-full before:block before:top-1/4 before:opacity-20 before: before:w-10 before:h-10 before:shadow-indigo-300 before:shadow-3xl before:animate-pulse-size">
                <Link to="/" className="flex">
-                  <Icon src="scout.svg" classNames={{ icon: 'w-16 h-16 absolute' }} />
+                  <Scout className="w-16 h-16 absolute" />
                </Link>
             </div>
             <nav className="flex items-center justify-between">
@@ -95,7 +96,7 @@ export default function Header() {
                            ) : (
                               <div className="w-8 h-8 rounded-full bg-gray-500 opacity-40 animate-pulse" />
                            )}
-                           <Icon src={'icons/arrow.svg'} classNames={{ icon: 'h-4 w-4 ml-2' }} />
+                           <Arrow className="h-4 w-4 ml-2" />
                         </div>
                      )}
                   </li>

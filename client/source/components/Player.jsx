@@ -4,7 +4,17 @@ import { Slider } from '@mui/material';
 
 import socket from '../services/socket';
 
-import Icon from 'components/Icon.jsx';
+import Play from '../assets/icons/Play';
+import Previous from '../assets/icons/Previous';
+import Next from '../assets/icons/Next';
+import Pause from '../assets/icons/Pause';
+import Shuffle from '../assets/icons/Shuffle';
+import Repeat from '../assets/icons/Repeat';
+import RepeatOnce from '../assets/icons/RepeatOnce';
+import VolumeHigh from '../assets/icons/VolumeHigh';
+import VolumeLow from '../assets/icons/VolumeLow';
+import VolumeMute from '../assets/icons/VolumeMute';
+import VolumeNormal from '../assets/icons/VolumeNormal';
 
 function Player(props) {
    const [playing, setPlaying] = React.useState(false);
@@ -66,11 +76,8 @@ function Player(props) {
                   onClick={() => socket.emit('shuffle', !shuffle)}
                   className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                >
-                  <Icon
-                     src="icons/shuffle.svg"
-                     classNames={{
-                        icon: 'stroke-neutral-400 w-5 h-5' + (shuffle ? ' stroke-red-600' : ''),
-                     }}
+                  <Shuffle
+                     className={'stroke-neutral-400 w-5 h-5' + (shuffle ? ' stroke-red-600' : '')}
                   />
                </button>
                <div className="flex items-center gap-2">
@@ -78,28 +85,28 @@ function Player(props) {
                      onClick={() => socket.emit('previous')}
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                   >
-                     <Icon src="icons/previous.svg" />
+                     <Previous />
                   </button>
                   {!playing ? (
                      <button
                         className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                         onClick={() => socket.emit('resume')}
                      >
-                        <Icon src="icons/play.svg" />
+                        <Play />
                      </button>
                   ) : (
                      <button
                         className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                         onClick={() => socket.emit('pause')}
                      >
-                        <Icon src="icons/pause.svg" />
+                        <Pause />
                      </button>
                   )}
                   <button
                      onClick={() => socket.emit('next')}
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                   >
-                     <Icon src="icons/next.svg" />
+                     <Next />
                   </button>
                </div>
                {repeat == 'queue' ? (
@@ -107,27 +114,21 @@ function Player(props) {
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                      onClick={() => socket.emit('repeat', 'track')}
                   >
-                     <Icon src="icons/repeat.svg" classNames={{ icon: 'stroke-red-600 w-6 h-6' }} />
+                     <Repeat className="stroke-red-600 w-6 h-6" />
                   </button>
                ) : repeat == 'track' ? (
                   <button
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                      onClick={() => socket.emit('repeat', 'off')}
                   >
-                     <Icon
-                        src="icons/repeat-once.svg"
-                        classNames={{ icon: 'stroke-red-600 w-6 h-6' }}
-                     />
+                     <RepeatOnce className="stroke-red-600 w-6 h-6" />
                   </button>
                ) : (
                   <button
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                      onClick={() => socket.emit('repeat', 'queue')}
                   >
-                     <Icon
-                        src="icons/repeat.svg"
-                        classNames={{ icon: 'stroke-neutral-400 w-6 h-6' }}
-                     />
+                     <Repeat className="stroke-neutral-400 w-6 h-6-6" />
                   </button>
                )}
             </div>
@@ -161,25 +162,13 @@ function Player(props) {
          <div className="flex items-center gap-1">
             <button>
                {volume == 0 ? (
-                  <Icon
-                     src="icons/volume-mute.svg"
-                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
-                  />
+                  <VolumeMute className="stroke-neutral-200 w-[18px] h-[18px]" />
                ) : volume < 0.33 ? (
-                  <Icon
-                     src="icons/volume-low.svg"
-                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
-                  />
+                  <VolumeLow className="stroke-neutral-200 w-[18px] h-[18px]" />
                ) : volume < 0.66 ? (
-                  <Icon
-                     src="icons/volume-normal.svg"
-                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
-                  />
+                  <VolumeNormal className="stroke-neutral-200 w-[18px] h-[18px]" />
                ) : (
-                  <Icon
-                     src="icons/volume-high.svg"
-                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
-                  />
+                  <VolumeHigh className="stroke-neutral-200 w-[18px] h-[18px]" />
                )}
             </button>
             <Slider
