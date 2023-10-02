@@ -237,15 +237,11 @@ class Queue {
     * @returns {boolean | Track} null if queue is empty, Track if queue is not empty
     */
    next(force = false) {
-      if (this.end()) return null;
+      if (this.end() && !force && this.config.repeat != 'off') return null;
       if (this.config.repeat == 'track' && !force) return this.current;
-      if (this.current.index == this.list.size) {
-         if (this.config.repeat == 'queue') {
-            if (this.config.shuffle) {
-               this.shuffle(true);
-            }
-            return this.list.get(1);
-         }
+      if (this.end() && this.config.repeat == 'queue') {
+         if (this.config.shuffle) this.shuffle(true);
+         return this.list.get(1);
       }
       return this.list.get(this.current.index + 1);
    }
@@ -306,6 +302,7 @@ class Queue {
 
       tracks.sort(() => Math.random() - 0.5);
       tracks.forEach((track) => {
+         if (repeat && track.id == this.current.id) return;
          track.index = this.list.size + 1;
          this.list.set(this.list.size + 1, track);
       });
@@ -349,7 +346,7 @@ class Queue {
     * @returns {boolean} true if queue is empty
     */
    end() {
-      return this.config.repeat == 'queue' ? false : this.current.index == this.list.size;
+      return this.current.index == this.list.size;
    }
 
    /**
