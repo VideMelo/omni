@@ -30,10 +30,10 @@ Rename `.env.template` to `.env` in `./client` and set the following settings:
 
 ```sh
 # Get this in https://discord.com/developers/applications
-NEXT_PUBLIC_DISCORD_ID= # Discord Bot ID
+VITE_DISCORD_ID= # Discord Bot ID
 
-NEXT_PUBLIC_API_URL=http://localhost:3000/api # Your API URL Domain
-NEXT_PUBLIC_SERVER_URL=http://localhost:8080 # Your Server Url Domain
+VITE_API_URL=http://localhost:3000/api # Your API URL Domain
+VITE_SERVER_URL=http://localhost:8080 # Your Server Url Domain
 ```
 
 ### Run

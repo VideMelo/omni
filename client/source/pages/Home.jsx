@@ -1,7 +1,5 @@
-'use client';
-
-import Discord from 'assets/icons/discord.svg';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
+import Icon from 'components/Icon.jsx';
 
 export default function Page() {
    return (
@@ -14,10 +12,11 @@ export default function Page() {
             voice channel.
          </p>
          <div className="flex gap-4">
-            <Link href={`/dashboard`}>
+            <Link to={`/dashboard`}>
                <button className="h-[60px] px-7 rounded-xl cursor-pointer bg-blue-500 shadow-2xl shadow-[rgba(89,116,236,0.2)] max-sm:px-5 max-sm:w-full">
                   <span className="flex items-center justify-center text-white w-full font-medium text-right whitespace-nowrap text-lg max-sm:text-[13px]">
-                     <Discord className="w-6 h-6 mr-5" /> Invite to Discord
+                     <Icon src="icons/discord.svg" classNames={{ icon: 'w-6 h-6 mr-5' }} /> Invite
+                     to Discord
                   </span>
                </button>
             </Link>

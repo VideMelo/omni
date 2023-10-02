@@ -23,6 +23,7 @@ class Track {
       this.query = query;
       this.id = id;
       this.type = 'track';
+      this.builded = false
       this.artists = authors.map((author) => author.name).join(', ');
    }
 

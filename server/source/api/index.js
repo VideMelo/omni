@@ -29,7 +29,7 @@ api.use(bodyParser.json());
 fs.readdirSync('./source/api/routes').forEach((file) => {
    if (file.endsWith('.js')) {
       const route = require(`./routes/${file}`);
-      api.use('/api', route);
+      api.use('/', route);
    }
 });
 

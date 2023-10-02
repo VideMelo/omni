@@ -27,12 +27,16 @@ class Youtube {
    async getVideo(url, options = {}) {
       const video = await youtube.getVideo(url, options);
       console.log(video);
-      return new Track(this.build(video));
+      return new Track(await this.build(video));
    }
 
    async getPlaylist(id, options = {}) {
       const playlist = await youtube.getPlaylist(id, options).then((playlist) => playlist.fetch());
       const videos = playlist.videos;
+      let tracks = videos.map(async (video) => {
+         return new Track(await this.build(video));
+      });
+      tracks = Promise.all(tracks);
 
       return {
          type: 'list',
@@ -48,9 +52,7 @@ class Youtube {
          thumbnail: playlist.thumbnail.url,
          url: playlist.url,
          total: playlist.videoCount,
-         tracks: videos.map((video) => {
-            return new Track(this.build(video));
-         }),
+         tracks,
       };
    }
 
@@ -64,10 +66,18 @@ class Youtube {
       }
    }
 
-   build(video) {
-      const thumbnail = video.thumbnail.url.match(/(.*\.jpg)/)
-         ? video.thumbnail.url.match(/(.*\.jpg)/)[0]
-         : video.thumbnail.url;
+   async build(video) {
+      let match = video.thumbnail.url.match(/(.*\.jpg)/);
+      let thumbnail = match ? match[0] : video.thumbnail.url;
+
+      // this crop the thumbnail 1:1
+      // const response = await axios.get(thumbnail, {
+      //    responseType: 'arraybuffer',
+      // });
+
+      // thumbnail = await sharp(response.data).resize(200, 200).toBuffer();
+      // thumbnail = `data:image/jpeg;base64, ${Buffer.from(thumbnail).toString('base64')}`;
+
       return {
          type: 'track',
          id: video.id,

@@ -1,20 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
    content: [
-      './source/screens/**/*.{js,ts,jsx,tsx,mdx}',
+      './source/pages/**/*.{js,ts,jsx,tsx,mdx}',
       './source/components/**/*.{js,ts,jsx,tsx,mdx}',
-      './app/**/*.{js,ts,jsx,tsx,mdx}',
    ],
    theme: {
       extend: {
-            colors: {
-               'blue-100': '#A2B3FF',
-               'blue-200': '#839AFF',
-               'blue-300': '#738DFF',
-               'blue-400': '#6480FF',
-               'blue-500': '#486AFF',
-               'blue-600': '#3257FE',
-            },
+         colors: {
+            'blue-100': '#A2B3FF',
+            'blue-200': '#839AFF',
+            'blue-300': '#738DFF',
+            'blue-400': '#6480FF',
+            'blue-500': '#486AFF',
+            'blue-600': '#3257FE',
+         },
          boxShadow: {
             '3xl': '0 15px 50px 32px rgba(0, 0, 0, 0.3)',
          },
@@ -29,6 +28,4 @@ module.exports = {
          },
       },
    },
-   plugins: [],
-   important: '#root',
 };

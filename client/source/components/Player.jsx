@@ -1,23 +1,12 @@
-'use client';
-
 import React from 'react';
+
 import { Slider } from '@mui/material';
 
 import socket from '../services/socket';
 
-import Shuffle from 'assets/icons/shuffle.svg';
-import Previous from 'assets/icons/previous.svg';
-import Play from 'assets/icons/play.svg';
-import Pause from 'assets/icons/pause.svg';
-import Next from 'assets/icons/next.svg';
-import Repeat from 'assets/icons/repeat.svg';
-import RepeatOnce from 'assets/icons/repeat-once.svg';
-import VolumeMute from 'assets/icons/volume-mute.svg';
-import VolumeLow from 'assets/icons/volume-low.svg';
-import VolumeNormal from 'assets/icons/volume-normal.svg';
-import VolumeHigh from 'assets/icons/volume-high.svg';
+import Icon from 'components/Icon.jsx';
 
-export default function Player({ data }) {
+function Player(props) {
    const [playing, setPlaying] = React.useState(false);
    const [shuffle, setShuffle] = React.useState(false);
    const [repeat, setRepeat] = React.useState('off');
@@ -39,8 +28,8 @@ export default function Player({ data }) {
    }, []);
 
    React.useEffect(() => {
-      if (!data) return;
-      const { config, playing, state, current } = data;
+      if (!props.data) return;
+      const { config, playing, state, current } = props.data;
 
       setShuffle(config.shuffle);
       setRepeat(config.repeat);
@@ -51,7 +40,7 @@ export default function Player({ data }) {
 
       setPlaying(playing);
       setIdle(state == 'idle');
-   }, [data]);
+   }, [props.data]);
 
    React.useEffect(() => {
       if (!playing) return;
@@ -77,8 +66,11 @@ export default function Player({ data }) {
                   onClick={() => socket.emit('shuffle', !shuffle)}
                   className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                >
-                  <Shuffle
-                     className={'stroke-neutral-400 w-5 h-5' + (shuffle ? ' stroke-red-600' : '')}
+                  <Icon
+                     src="icons/shuffle.svg"
+                     classNames={{
+                        icon: 'stroke-neutral-400 w-5 h-5' + (shuffle ? ' stroke-red-600' : ''),
+                     }}
                   />
                </button>
                <div className="flex items-center gap-2">
@@ -86,28 +78,28 @@ export default function Player({ data }) {
                      onClick={() => socket.emit('previous')}
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                   >
-                     <Previous />
+                     <Icon src="icons/previous.svg" />
                   </button>
                   {!playing ? (
                      <button
                         className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                         onClick={() => socket.emit('resume')}
                      >
-                        <Play />
+                        <Icon src="icons/play.svg" />
                      </button>
                   ) : (
                      <button
                         className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                         onClick={() => socket.emit('pause')}
                      >
-                        <Pause />
+                        <Icon src="icons/pause.svg" />
                      </button>
                   )}
                   <button
                      onClick={() => socket.emit('next')}
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                   >
-                     <Next />
+                     <Icon src="icons/next.svg" />
                   </button>
                </div>
                {repeat == 'queue' ? (
@@ -115,21 +107,27 @@ export default function Player({ data }) {
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                      onClick={() => socket.emit('repeat', 'track')}
                   >
-                     <Repeat className="stroke-red-600 w-6 h-6" />
+                     <Icon src="icons/repeat.svg" classNames={{ icon: 'stroke-red-600 w-6 h-6' }} />
                   </button>
                ) : repeat == 'track' ? (
                   <button
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                      onClick={() => socket.emit('repeat', 'off')}
                   >
-                     <RepeatOnce className="stroke-red-600 w-6 h-6" />
+                     <Icon
+                        src="icons/repeat-once.svg"
+                        classNames={{ icon: 'stroke-red-600 w-6 h-6' }}
+                     />
                   </button>
                ) : (
                   <button
                      className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                      onClick={() => socket.emit('repeat', 'queue')}
                   >
-                     <Repeat className="stroke-neutral-400 w-6 h-6" />
+                     <Icon
+                        src="icons/repeat.svg"
+                        classNames={{ icon: 'stroke-neutral-400 w-6 h-6' }}
+                     />
                   </button>
                )}
             </div>
@@ -147,9 +145,12 @@ export default function Player({ data }) {
                   onChangeCommitted={(e, value) => socket.emit('seek', value * 1000)}
                   disabled={!duration}
                   slotProps={{
-                     root: { className: 'group cursor-default text-white py-1 h-1' },
-                     thumb: { className: 'h-2 w-2 hidden group-hover:flex !shadow-none' },
-                     track: { className: position ? 'flex' : 'hidden' },
+                     root: { className: 'group !cursor-default !text-white !py-1 !h-1' },
+                     thumb: {
+                        className: '!h-2 !w-2 !hidden group-hover:!flex !bg-white !shadow-none',
+                     },
+                     track: { className: position ? '!bg-white !flex' : '!hidden' },
+                     rail: { className: '!bg-neutral-400' },
                   }}
                />
                <span className="block w-5 text-neutral-400 font-semibold text-[9px] align-middle">
@@ -160,13 +161,25 @@ export default function Player({ data }) {
          <div className="flex items-center gap-1">
             <button>
                {volume == 0 ? (
-                  <VolumeMute className="stroke-neutral-200 w-[18px] h-[18px]" />
+                  <Icon
+                     src="icons/volume-mute.svg"
+                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
+                  />
                ) : volume < 0.33 ? (
-                  <VolumeLow className="stroke-neutral-200 w-[18px] h-[18px]" />
+                  <Icon
+                     src="icons/volume-low.svg"
+                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
+                  />
                ) : volume < 0.66 ? (
-                  <VolumeNormal className="stroke-neutral-200 w-[18px] h-[18px]" />
+                  <Icon
+                     src="icons/volume-normal.svg"
+                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
+                  />
                ) : (
-                  <VolumeHigh className="stroke-neutral-200 w-[18px] h-[18px]" />
+                  <Icon
+                     src="icons/volume-high.svg"
+                     classNames={{ icon: 'stroke-neutral-200 w-[18px] h-[18px]' }}
+                  />
                )}
             </button>
             <Slider
@@ -178,12 +191,17 @@ export default function Player({ data }) {
                onChange={(e, value) => setVolume(value)}
                onChangeCommitted={(e, value) => socket.emit('volume', value)}
                slotProps={{
-                  root: { className: 'group cursor-default text-white py-1 h-1 w-16' },
-                  thumb: { className: 'h-2 w-2 hidden group-hover:flex !shadow-none' },
-                  track: { className: volume ? 'flex' : 'hidden' },
+                  root: { className: 'group !cursor-default !text-white !py-1 !h-1 !w-16' },
+                  thumb: {
+                     className: '!h-2 !w-2 !hidden group-hover:!flex !bg-white !shadow-none',
+                  },
+                  track: { className: volume ? '!bg-white !flex' : '!hidden' },
+                  rail: { className: '!bg-neutral-400' },
                }}
             />
          </div>
       </div>
    );
 }
+
+export default Player;

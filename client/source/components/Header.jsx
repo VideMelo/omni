@@ -1,28 +1,41 @@
-'use client';
-
 import React from 'react';
+import Cookies from 'js-cookie';
+import { Link, useNavigate } from 'react-router-dom';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import socket from 'source/services/socket.js';
 
-import { getCookie } from 'cookies-next';
+import Auth from 'hooks/auth.js';
 
-import socket from 'source/services/socket';
-import Logo from 'assets/scout.svg';
-import Arrow from 'assets/icons/arrow.svg';
-import SingInButton from './SingInButton';
+import Icon from './Icon';
 
 export default function Header() {
-   const { push } = useRouter();
-
+   const navigate = useNavigate();
    const options = [
-      { name: 'GitHub', url: 'https://github.com/VideMelo/omni' },
       { name: 'About', url: '/about' },
       { name: 'Dashboard', url: '/dashboard', isPrivate: true },
+      { name: 'GitHub', url: 'https://github.com/VideMelo/omni' },
    ];
 
-   const token = getCookie('auth-token');
+   const auth = Auth({
+      redirectUri: `${import.meta.env.VITE_API_URL}/auth-login`,
+      clientId: import.meta.env.VITE_DISCORD_ID,
+      authUrl: 'https://discord.com/api/oauth2/authorize',
+      scopes: ['identify', 'guilds'],
+
+      onSuccess: (data) => {
+         Cookies.set('auth-token', data.token, {
+            expires: new Date(data.expires),
+            path: '/',
+         });
+         navigate('/dashboard');
+         window.location.reload();
+      },
+      oneError: () => {
+         console.error('Error in login');
+      },
+   });
+
+   const token = Cookies.get('auth-token');
    const [isLogged, setIsLogged] = React.useState(true);
    const [user, setUser] = React.useState(null);
 
@@ -43,8 +56,8 @@ export default function Header() {
       <header className="w-full h-16 my-6 mb-24 text-white flex items-center justify-center">
          <div className="container px-6 flex items-center justify-between">
             <div className="w-16 h-16 relative before:left-1/4 before:absolute before:rounded-full before:block before:top-1/4 before:opacity-20 before: before:w-10 before:h-10 before:shadow-indigo-300 before:shadow-3xl before:animate-pulse-size">
-               <Link href={'/'} className="flex">
-                  <Logo className="w-16 h-16 absolute" />
+               <Link to="/" className="flex">
+                  <Icon src="scout.svg" classNames={{ icon: 'w-16 h-16 absolute' }} />
                </Link>
             </div>
             <nav className="flex items-center justify-between">
@@ -55,7 +68,7 @@ export default function Header() {
                      return (
                         <li key={index} className="mx-2">
                            <Link
-                              href={option.url}
+                              to={option.url}
                               className="text-[14px] uppercase hover:opacity-90 tracking-widest opacity-70 py-2 px-4 font-medium hover:border-transparent rounded-lg"
                            >
                               {option.name}
@@ -65,27 +78,24 @@ export default function Header() {
                   })}
                   <li className="mx-2">
                      {!isLogged ? (
-                        <SingInButton
-                           onSuccess={() => {
-                              push('/dashboard');
-                              setIsLogged(true);
-                           }}
-                           onError={() => setIsLogged(false)}
-                        />
+                        <button
+                           className="text-blue-500 hover:bg-[rgba(79,126,255,0.21)] bg-[rgba(79,126,255,0.13)] text-[16px] font-semibold py-3 px-5 hover:border-transparent rounded-xl"
+                           onClick={() => isLogged}
+                        >
+                           Sing In
+                        </button>
                      ) : (
                         <div className="flex items-center cursor-pointer">
                            {user ? (
-                              <Image
+                              <img
                                  src={user.avatar}
                                  alt="avatar"
                                  className="w-8 h-8 rounded-full"
-                                 width={32}
-                                 height={32}
                               />
                            ) : (
                               <div className="w-8 h-8 rounded-full bg-gray-500 opacity-40 animate-pulse" />
                            )}
-                           <Arrow className="h-4 w-4 ml-2" />
+                           <Icon src={'icons/arrow.svg'} classNames={{ icon: 'h-4 w-4 ml-2' }} />
                         </div>
                      )}
                   </li>

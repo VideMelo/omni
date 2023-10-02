@@ -7,12 +7,13 @@ class Embed {
       description = '',
       fields = [],
       thumbnail = '',
-      color = '91S7E0',
+      color = '#91D7E0',
       timestamp = false,
       author = '',
       footer = 0,
    }) {
       const embed = new Discord.EmbedBuilder();
+
       embed.setColor(color);
 
       if (title) embed.setTitle(title);
@@ -39,7 +40,7 @@ class Embed {
 
    // get the most present color in an image
    async color(image, type = 'Vibrant') {
-      return image ? (await Vibrant.from(image).getSwatches())?.[type]?.hex : '91S7E0';
+      return image ? (await Vibrant.from(image).getSwatches())?.[type]?.hex : '#91D7E0';
    }
 }
 

@@ -5,7 +5,6 @@ module.exports = (io) => {
          const queue = client.player.get(socket.guild);
          if (!queue) return;
          console.log(`user: ${socket.user} with ${socket.id} get-queue, in guild: ${socket.guild}`);
-
          if (typeof callback == 'function')
             callback({
                list: queue.list,

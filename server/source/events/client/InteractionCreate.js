@@ -20,7 +20,7 @@ class InteractionCreate extends Event {
          interaction.replyErro = async function (message, options = {}) {
             const Embed = client.embed.new({
                description: message,
-               color: 'BA3737',
+               color: '#BA3737',
                ...options,
             });
 
@@ -35,9 +35,9 @@ class InteractionCreate extends Event {
             }
          };
 
-         const command = client.commands.get(interaction.command.name);
+         const command = client.commands.get(interaction.commandName);
          if (!command) {
-            Logger.erro(`No command matching ${interaction.command.name} was found.`);
+            Logger.erro(`No command matching ${interaction.commandName} was found.`);
             return;
          }
 
@@ -51,7 +51,7 @@ class InteractionCreate extends Event {
                throw new Error();
             await command.execute({ client, interaction });
          } catch (error) {
-            Logger.erro(`Error executing ${interaction.command.name}:`, error);
+            Logger.erro(`Error executing ${interaction.commandName}:`, error);
             await interaction.replyErro(
                `What the f#@&! A very serious error occurred, try again later. \`\`\`${error}\`\`\``
             );
@@ -59,16 +59,16 @@ class InteractionCreate extends Event {
       }
 
       if (interaction.isAutocomplete()) {
-         const command = client.commands.get(interaction.command.name);
+         const command = client.commands.get(interaction.commandName);
          if (!command) {
-            Logger.erro(`No command matching ${interaction.command.name} was found.`);
+            Logger.erro(`No command matching ${interaction.commandName} was found.`);
             return;
          }
 
          try {
             await command.autocomplete({ client, interaction });
          } catch (error) {
-            Logger.erro(`Error executing ${interaction.command.name}`);
+            Logger.erro(`Error executing ${interaction.commandName}`);
             throw new Error(error);
          }
       }

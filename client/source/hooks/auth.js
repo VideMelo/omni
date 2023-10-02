@@ -32,16 +32,14 @@ const getAuthUrl = ({ authUrl, clientId, redirectUri, scopes, guildId, state, au
    }
 };
 
-export default function useOAuth2(props) {
-   const getAuth = useCallback(
-      (data = {}) => {
-         const state = randomString();
-         localStorage.setItem('auth-state', state);
-         
-         openPopup(getAuthUrl({ ...props, ...data, state }));
-      },
-      [props]
-   );
+export default function Auth(props) {
+   function getAuth(data = {}) {
+      const state = randomString();
+      localStorage.setItem('auth-state', state);
+
+      const url = getAuthUrl({ ...props, ...data, state });
+      openPopup(url);
+   }
 
    if (typeof window !== 'undefined') {
       window.addEventListener('message', (event) => {
