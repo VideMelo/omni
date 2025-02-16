@@ -1,8 +1,9 @@
+# Omni Bot
+
+![banner](assets/banner.png)
+
+
 ## Get Started
-
-### Prerequisites
-
--  [Node.js v19.4.X](https://nodejs.org/)
 
 ### Install Packages
 
