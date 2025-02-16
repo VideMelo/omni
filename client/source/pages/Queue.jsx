@@ -33,7 +33,7 @@ export default function Page() {
    const [player, setPlayer] = useState(null)
 
    useEffect(() => {
-      if (!metadata?.player || !metadata?.queue || !metadata?.track || !metadata?.palette) return
+      if (!metadata || !metadata?.player || !metadata?.queue || !metadata?.track || !metadata?.palette) return
       setPlayer(metadata.player)
       setPlaying(metadata.player.playing)
       setTimer(metadata.player.position / 1000)
@@ -43,9 +43,10 @@ export default function Page() {
       setTimer(metadata.timer)
    }, [metadata])
 
-   if (!track || !palette || !player) return null;
+   if (!metadata || !track || !palette || !player) return null;
+   if (!metadata || !metadata?.player || !metadata?.queue || !metadata?.track || !metadata?.palette) return null;
    return (
-      <main className="w-full h-full flex p-6 gap-3 overflow-auto scrollbar-none justify-center" style={{ backgroundColor: metadata?.palette?.alpha }}>
+      <main className="w-full h-full flex p-6 gap-3 overflow-auto scrollbar-none justify-center" style={{ backgroundColor: palette?.alpha }}>
          <div className="flex flex-col gap-4 w-full h-full">
             <div className={`relative  scrollbar-none w-full h-full flex-col flex rounded-3xl`}>
                <div className="flax w-ful mb-5 rounded-[20px] px-6 py-4 justify-center gap-10 items-center bg-black bg-opacity-40" >
@@ -54,7 +55,7 @@ export default function Page() {
                   </div>
                   <div className="flex items-center gap-2">
                      <Headphone className="w-6 h-6 text-white text-opacity-50" />
-                     <div className="font-normal text-lg text-white text-opacity-50">{metadata?.player.metadata.voice.name}</div>
+                     <div className="font-normal text-lg text-white text-opacity-50">{player.metadata.voice.name}</div>
                   </div>
                </div>
                <div className={`flex flexduration-700 mb-9`}>

@@ -2,7 +2,7 @@ import React from 'react'
 import Plus from '../assets/icons/Plus'
 import socket from '../services/socket'
 
-export default function ItemList({ data, onClick }) {
+export default function ItemList({ data, onClick, newTrack }) {
    if (!data?.length) return (
       <div className='flex flex-col gap-5' >
          <div className='flex flex-col w-full gap-3 flex-grow'>
@@ -47,17 +47,14 @@ export default function ItemList({ data, onClick }) {
                <ul
                   className='flex gap-1 mt-2 scrollbar-none flex-grow'>
                   {data.map((track, index) => (
-                     <li key={track.id} className='flex flex-col gap-1 first:ml-6 last:mr-6 hover:bg-white hover:bg-opacity-5 p-4 rounded-md' onClick={() => onClick ? onClick(data[index]) : null}>
+                     <li key={track.id} className='flex flex-col gap-1 first:ml-6 last:mr-6 hover:bg-white hover:bg-opacity-5 p-4 rounded-md' onClick={(event) => onClick ? onClick(event, data[index]) : null}>
                         <div className='group flex flex-col items-end'>
                            <img src={track.thumbnail} className={`h-[140px] w-[140px] ${data[index].type === 'artist' ? 'rounded-full' : 'rounded-md'}`} />
                            {
                               track.type == 'track' ? (
-                                 <button className='p-2 opacity-0 cursor-pointer -mt-[46px] hover:bg-opacity-100 mr-[5px] group-hover:opacity-100 group-hover:bg-black w-[41px] h-[41px] inline-block group-hover:bg-opacity-70 rounded-md' onClick={(event) => {
-                                 event.stopPropagation();
-                                 socket.emit('new-track', track);
-                              }}>
-                                 <Plus className="w-7 h-7" />
-                              </button>
+                                 <button className='p-2 opacity-0 cursor-pointer -mt-[46px] hover:bg-opacity-100 mr-[5px] group-hover:opacity-100 group-hover:bg-black w-[41px] h-[41px] inline-block group-hover:bg-opacity-70 rounded-md' onClick={(event) => newTrack ? newTrack(event, data[index]) : null}>
+                                    <Plus className="w-7 h-7" />
+                                 </button>
                               ) : null
                            }
                         </div>

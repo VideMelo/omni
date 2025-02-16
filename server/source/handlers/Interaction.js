@@ -16,12 +16,12 @@ class Interaction extends SlashCommandBuilder {
    }
 
    autocomplete() {
-      this.client.logger.erro(`${this.name}.js - An 'autocomplete' method is required`);
+      this.client.logger.error(`${this.name}.js - An 'autocomplete' method is required`);
       throw new Error();
    }
 
    execute() {
-      this.client.logger.erro(`${this.name}.js - An 'execute' method is required`);
+      this.client.logger.error(`${this.name}.js - An 'execute' method is required`);
       throw new Error();
    }
 }

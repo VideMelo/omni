@@ -5,7 +5,7 @@ const MAX_REQUESTS_CUSTOM = {
    next: 3,
    previous: 3,
 };
-const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'set-user', 'sync-voiceChannel', 'search'];
+const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'set-user', 'syncVoiceChannel', 'search'];
 
 const requests = new Map();
 module.exports = (io) => {
@@ -27,8 +27,8 @@ module.exports = (io) => {
          }
 
          if (socket.warns > 20) {
-            io.emit('error', 'userBlocked');
-            return client.logger.erro(`User blocked: [${socket.user}]`);
+            socket.emit('error', 'userBlocked');
+            return client.logger.error(`User blocked: [${socket.user}]`);
          }
 
          const now = Date.now();
@@ -44,8 +44,8 @@ module.exports = (io) => {
          data[event].count++;
 
          if (data[event].count > maxRequests) {
-            client.logger.erro(`Event rate limit: [${event}], user: ${socket.user}`);
-            io.emit('error', 'rateLimit');
+            client.logger.error(`Event rate limit: [${event}], user: ${socket.user}`);
+            socket.emit('error', 'rateLimit');
             socket.warns++;
             return;
          }
@@ -55,29 +55,40 @@ module.exports = (io) => {
       });
 
       function validate() {
-         if (!socket?.voice || !socket?.user || !socket?.guild) return;
+         if (!socket?.user) return;
+
+         if (!socket.guild || !socket?.voice) {
+            const data = { error: { status: 404, message: 'userNotSyncVoiceChannel' } };
+            socket.emit('error', data.error.message);
+            return data;
+         }
 
          const queue = client.queue.get(socket.guild);
          const voice = queue?.voice;
-         if (!voice) {
-            client.logger.erro('Queue is not conncet in a voice channel!');
-            return;
+
+         if (!queue || !voice) {
+            const data = { error: { status: 404, message: 'queueNotFound' } };
+            socket.emit('error', data.error.message);
+            return data;
          }
 
          const requester = voice.members.get(socket.user);
          if (!requester) {
-            client.logger.erro('User is not in the queue voice channel!');
-            return;
+            const data = {
+               error: { status: 403, message: 'userNotInQueueChannel' },
+            };
+            socket.emit('error', data.error.message);
+            return data;
          }
 
          return { queue, voice, requester };
       }
 
       socket.on('getQueue', (callback) => {
-         if (!socket.guild) return;
+         if (!socket.guild || !socket.voice) if (typeof callback == 'function') return callback(undefined);
 
          const queue = client.queue.get(socket.guild);
-         if (!queue) return callback(undefined);
+         if (!queue) if (typeof callback == 'function') return callback(undefined);
 
          client.logger.info(
             `user: ${socket.user} with ${socket.id} getQueue, in guild: ${socket.guild}`
@@ -91,10 +102,10 @@ module.exports = (io) => {
       });
 
       socket.on('getPlayer', (callback) => {
-         if (!socket.guild) return;
+         if (!socket.guild || !socket.voice) if (typeof callback == 'function') return callback(undefined);
 
          const queue = client.queue.get(socket.guild);
-         if (!queue) return callback(undefined)
+         if (!queue) if (typeof callback == 'function') return callback(undefined);
 
          client.logger.info(
             `user: ${socket.user} with ${socket.id} getPlayer, in guild: ${socket.guild}`
@@ -105,8 +116,9 @@ module.exports = (io) => {
                metadata: {
                   channel: queue.channel,
                   voice: queue.voice,
-                  guild: queue.guild.name,
+                  guild: queue.guild,
                },
+               shuffle: queue.shuffle,
                repeat: queue.repeat,
                position: queue?.player?.position | 0,
                playing: queue.playing,
@@ -120,14 +132,14 @@ module.exports = (io) => {
 
       socket.on('play', async (track, callback) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          data.queue.play(track, { requester: socket.user });
       });
 
-      socket.on('new-track', async (track, callback) => {
+      socket.on('newTrack', async (track, callback) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
          track = {
             ...track,
             resquester: socket.user | 0,
@@ -136,16 +148,16 @@ module.exports = (io) => {
          if (typeof callback == 'function') callback(data.queue.tracks);
       });
 
-      socket.on('skip-to', (index) => {
+      socket.on('skipTo', (index) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          data.queue.play(data.queue.skip(index), { state: 'update', emit: true });
       });
 
       socket.on('pause', () => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          if (!data.queue.playing) return;
          data.queue.pause();
@@ -153,7 +165,7 @@ module.exports = (io) => {
 
       socket.on('resume', () => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          if (data.queue.playing) return;
          data.queue.unpause();
@@ -161,27 +173,27 @@ module.exports = (io) => {
 
       socket.on('next', () => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          data.queue.play(data.queue.next(true));
       });
 
       socket.on('previous', () => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
          data.queue.play(data.queue.previous(true), { state: 'update', emit: true });
       });
 
       socket.on('repeat', (value) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          data.queue.setRepeat(value);
       });
 
       socket.on('shuffle', (value) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          if (value) {
             data.queue.shuffle();
@@ -192,14 +204,14 @@ module.exports = (io) => {
 
       socket.on('volume', (value) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          data.queue.volume(value);
       });
 
       socket.on('seek', (value) => {
          const data = validate();
-         if (!data) return;
+         if (data.error) return;
 
          data.queue.seek(value);
          client.socket.to(socket.guild).emit('seek', value);

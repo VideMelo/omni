@@ -23,8 +23,8 @@ class Queue extends EventEmitter {
       this.volume = 0.5;
    }
 
-   socket(destination = this.guild.id, action = 'updatePlayer') {
-      return this.client.socket.to(destination).emit(action);
+   socket(action = 'syncPlayer') {
+      return this.client.socket.to(this.guild.id).emit(action);
    }
 
    async connect(voice) {
@@ -53,7 +53,7 @@ class Queue extends EventEmitter {
                   this.player.move(
                      this.client.nodes[Math.floor(Math.random() * this.client.nodes.length)].name
                   );
-                  return this.client.logger.erro('Error to load track');
+                  return this.client.logger.error('Error to load track');
                }
                if (data.reason != 'finished') return;
                const next = this.next();
@@ -66,7 +66,7 @@ class Queue extends EventEmitter {
          this.initialized = true;
          this.socket();
       } catch (err) {
-         this.client.logger.erro(err);
+         this.client.logger.error(err);
       }
    }
 
@@ -86,7 +86,7 @@ class Queue extends EventEmitter {
       this.client.manager.leaveVoiceChannel(this.guild.id);
 
       this.emit('disconnect');
-      this.socket()
+      this.socket();
       this.removeAllListeners();
    }
 
@@ -116,7 +116,7 @@ class Queue extends EventEmitter {
          }
          if (track?.metadata?.encoded) {
             this.current = track;
-            await this.player.playTrack({ track: { encoded: track?.metadata?.encoded } });
+            await this.player.playTrack({ track: { encoded: track?.metadata?.encoded } }).catch((err) => this.client.logger.error(`Error to playing track ${track.name}:`, err))
          }
       } catch (erro) {
          console.error(erro);

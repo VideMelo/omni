@@ -30,7 +30,7 @@ class NowPlaying extends Event {
          await last?.delete();
       } catch (error) {
          if (error.code == 10008) return;
-         client.logger.erro(error);
+         client.logger.error(error);
       }
    }
 }

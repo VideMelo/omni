@@ -34,14 +34,14 @@ class Interactions {
                      );
                   }
                } catch (error) {
-                  this.client.logger.erro(`${file} failed: ${error}`);
+                  this.client.logger.error(`${file} failed: ${error}`);
                }
             });
          });
          this.client.logger.done(`Successfully loaded ${this.items.size} interactions.`);
          this.deploy();
       } catch (error) {
-         this.client.logger.erro(`Error loading intrecations.`, error);
+         this.client.logger.error(`Error loading intrecations.`, error);
          throw new Error(error);
       }
    }
@@ -51,17 +51,14 @@ class Interactions {
 
       try {
          if (this.items.size == 0) {
-            this.client.logger.erro('Could not find any command');
+            this.client.logger.error('Could not find any command');
             throw new Error();
          }
 
          this.client.logger.async(`Started deploying interactions:`);
-         const data = await rest.put(
-            Discord.Routes.applicationCommands(this.client.config.id),
-            {
-               body: this.items.map((interaction) => interaction),
-            }
-         );
+         const data = await rest.put(Discord.Routes.applicationCommands(this.client.config.id), {
+            body: this.items.map((interaction) => interaction),
+         });
 
          data.forEach((interaction) => {
             this.items.set(interaction.name, {
@@ -72,7 +69,7 @@ class Interactions {
 
          this.client.logger.done(`Successfully deployed ${data.length} interactions.`);
       } catch (error) {
-         this.client.logger.erro(`Error loading interactions.`, error);
+         this.client.logger.error(`Error loading interactions.`, error);
       }
    }
 
@@ -81,7 +78,7 @@ class Interactions {
       if (interaction.isChatInputCommand()) {
          const command = this.items.get(interaction.commandName);
          if (!command) {
-            this.client.logger.erro(`No command matching ${interaction.commandName} was found.`);
+            this.client.logger.error(`No command matching ${interaction.commandName} was found.`);
             return;
          }
 
@@ -95,7 +92,7 @@ class Interactions {
                throw new Error('No prmissions!');
             await command.execute({ client: this.client, context });
          } catch (error) {
-            this.client.logger.erro(`Error executing ${interaction.commandName}:`, error);
+            this.client.logger.error(`Error executing ${interaction.commandName}:`, error);
             await context.replyErro(
                `What the f#@&! A very serious error occurred, try again later. \`\`\`${error}\`\`\``
             );
@@ -108,13 +105,13 @@ class InteractionContext {
    constructor(client, interaction) {
       this.client = client;
       this.interaction = interaction;
-      
+
       return new Proxy(this, {
          get: (target, prop) => {
             if (prop in target) {
                return target[prop];
             } else {
-               return this.interaction[prop]
+               return this.interaction[prop];
             }
          },
       });
@@ -130,8 +127,7 @@ class InteractionContext {
 
    get me() {
       return this.interaction.guild?.members.me || undefined;
-   } 
-
+   }
 
    get queue() {
       return this.client.queue.get(this.interaction.guild.id);
@@ -151,8 +147,15 @@ class InteractionContext {
 
       try {
          if (this.interaction.replied || this.interaction.deferred)
-            await this.interaction.editReply({ embeds: [Embed], flags: Discord.MessageFlags.Ephemeral });
-         else await this.interaction.reply({ embeds: [Embed], flags: Discord.MessageFlags.Ephemeral });
+            await this.interaction.editReply({
+               embeds: [Embed],
+               flags: Discord.MessageFlags.Ephemeral,
+            });
+         else
+            await this.interaction.reply({
+               embeds: [Embed],
+               flags: Discord.MessageFlags.Ephemeral,
+            });
       } catch {
          await this.interaction.channel.send({
             embeds: [Embed.setDescription(`<@${this.interaction.user.id}> + ${message}`)],

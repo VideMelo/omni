@@ -17,7 +17,7 @@ class Spotify {
             this.api.setAccessToken(data.body['access_token']);
          })
          .catch((err) => {
-            Logger.erro('Something went wrong when retrieving an access token', err);
+            Logger.error('Something went wrong when retrieving an access token', err);
          });
 
       this.urls = {
@@ -35,7 +35,7 @@ class Spotify {
    }
 
    async search(query, options = { types: ['track'], ...options }) {
-      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken(); 
+      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
       if (this.urls.pattern.test(query)) {
          const match = this.urls.pattern.exec(query);
 

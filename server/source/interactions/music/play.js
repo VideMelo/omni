@@ -35,7 +35,7 @@ class Play extends Interaction {
          try {
             search = await client.search.list(input);
          } catch (error) {
-            client.logger.erro(error);
+            client.logger.error(error);
 
             return context.replyErro('An error occurred while searching, please try again later.');
          }
@@ -106,7 +106,7 @@ class Play extends Interaction {
             return await context.replyErro('No tracks found.');
          }
       } catch (error) {
-         console.error(error)
+         console.error(error);
          throw new Error(error);
       }
    }

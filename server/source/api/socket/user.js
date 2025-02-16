@@ -1,11 +1,17 @@
-const axios = require('axios');
+const sockets = new Map();
 
 module.exports = (io) => {
    io.on('connection', (socket) => {
       const client = require('../../..');
       socket.on('set-user', (user) => {
-         client.logger.info(`user: ${user.id} connected whit socket: ${socket.id}`);
-         socket.user = user.id;
+         socket.user = user;
+         socket.join(user);
+
+         client.logger.info(`User: ${user}, connected with socket: ${socket.id}`);
+
+         socket.on('disconnect', () => {
+            client.logger.info(`User ${user} disconnected.`);
+         });
       });
    });
 };

@@ -54,13 +54,13 @@ class Events {
                   }
                   length++;
                } catch (error) {
-                  this.client.logger.erro(`${file} failed: ${error}`);
+                  this.client.logger.error(`${file} failed: ${error}`);
                }
             });
          });
          this.client.logger.done(`Successfully loaded ${length} events.`);
       } catch (error) {
-         this.client.logger.erro('Error loading events.', error);
+         this.client.logger.error('Error loading events.', error);
          throw new Error(error);
       }
    }

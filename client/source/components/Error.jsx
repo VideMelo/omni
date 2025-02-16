@@ -18,6 +18,7 @@ function Error({ erro, visible, notVisible, styles}) {
       }
    }, [erro]);
 
+   if (!isVisible) return null
    return (
       <div className={`${styles} w-max rounded-[20px] px-6 py-4 flex justify-center gap-10 items-center bg-red-600 ease-in duration-100 ${isVisible ? visible : notVisible}`}>
          <div className="text-sm text-white text-opacity-80">

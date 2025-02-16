@@ -33,12 +33,12 @@ export default function Page() {
    }, [navigate, query]);
 
    function handleItemClick(item) {
-      socket.emit('sync-voiceChannel', () => {
+      socket.emit('syncVoiceChannel', () => {
          socket.emit('play', item, (result) => {
             console.log(result);
          });
       })
-      
+
    }
 
    if (loading) return (
@@ -123,7 +123,11 @@ export default function Page() {
          <div className='flex flex-col gap-5'>
             <ItemList
                data={tracks}
-               onClick={(item) => handleItemClick(item)}
+               onClick={(event, item) => handleItemClick(item)}
+               newTrack={(event, track) => {
+                  event.stopPropagation();
+                  socket.emit('newTrack', track);
+               }}
             />
             <ItemList data={albums} />
             <ItemList data={artists} />

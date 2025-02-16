@@ -10,14 +10,13 @@ class Join extends Interaction {
 
    async execute({ client, context }) {
       try {
-         if (client.errors.verify(context, { errors: ['userNotInVoice'] }))
-            return;
-         
+         if (client.errors.verify(context, { errors: ['userNotInVoice'] })) return;
+
          context.noReply();
          client.initGuildQueue(context.channel.guild, context.member.voice.channel);
       } catch (error) {
          console.error(error);
-         client.logger.erro(error);
+         client.logger.error(error);
       }
    }
 }

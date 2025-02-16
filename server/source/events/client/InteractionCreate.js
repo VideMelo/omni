@@ -14,14 +14,14 @@ class InteractionCreate extends Event {
       if (interaction.isAutocomplete()) {
          const command = client.interactions.items.get(interaction.commandName);
          if (!command) {
-            client.logger.erro(`No command matching ${interaction.commandName} was found.`);
+            client.logger.error(`No command matching ${interaction.commandName} was found.`);
             return;
          }
 
          try {
             await command.autocomplete({ client, interaction });
          } catch (error) {
-            client.logger.erro(`Error executing ${interaction.commandName}`);
+            client.logger.error(`Error executing ${interaction.commandName}`);
             throw new Error(error);
          }
       }

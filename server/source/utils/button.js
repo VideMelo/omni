@@ -67,7 +67,7 @@ class Buttons {
 
             const buttons = [first, previous, number, next, last];
             const row = this.row(buttons);
-
+ 
             await interaction.reply({
                [type]: type === 'embeds' ? [pages[page]] : pages[page],
                components: pages.length > 1 ? [row] : [],

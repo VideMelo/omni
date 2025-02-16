@@ -9,7 +9,7 @@ class Logger {
       console.log(colors.yellow('[WARN]'), text);
    }
 
-   erro(text, erro = '') {
+   error(text, erro = '') {
       console.error(colors.red('[ERRO]'), text, erro);
    }
 
@@ -23,10 +23,6 @@ class Logger {
 
    test(text) {
       console.log(colors.yellow('[TEST]'), text);
-   }
-
-   lava(text) {
-      console.log(colors.grey('[LAVA]'), text)
    }
 }
 

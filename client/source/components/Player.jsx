@@ -52,8 +52,12 @@ function Player({ metadata, setMetadata }) {
    }, [queue, player, palette, track, timer])
 
    useEffect(() => {
-      socket.emit('sync-voiceChannel', updatePlayer)
-      socket.on('updatePlayer', updatePlayer)
+      socket.emit('syncVoiceChannel', syncPlayer)
+
+      socket.on('syncPlayer', syncPlayer)
+
+      socket.on('userVoiceUpdate', syncPlayer)
+
    }, []);
 
    function setInitialState() {
@@ -65,21 +69,25 @@ function Player({ metadata, setMetadata }) {
       setPalette(null)
    }
 
-   function updatePlayer() {
-      socket.emit('getQueue', (data) => {
-         if (!data) return setInitialState()
-         setQueue(data.list)
-         setTrack({ ...data.current, duration: data.current?.duration - 2500 | 0 })
-         handlePalette(data.current?.thumbnail)
-         console.log(data)
-      })
+   function syncPlayer() {
+      socket.emit('syncVoiceChannel', () => {
+         socket.emit('getQueue', (data) => {
+            console.log(data)
+            if (!data) return setInitialState()
+            setQueue(data.list)
+            setTrack({ ...data.current, duration: data.current?.duration - 2500 | 0 })
+            handlePalette(data.current?.thumbnail)
+            console.log(data)
+         })
 
-      socket.emit('getPlayer', (data) => {
-         if (!data) return setInitialState()
-         setPlayer(data)
-         setPlaying(data.playing)
-         setTimer(data.position / 1000)
-         console.log(data)
+         socket.emit('getPlayer', (data) => {
+            console.log(data)
+            if (!data) return setInitialState()
+            setPlayer(data)
+            setPlaying(data.playing)
+            setTimer(data.position / 1000)
+            console.log(data)
+         })
       })
    }
 

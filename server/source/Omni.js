@@ -36,7 +36,7 @@ class Omni extends Client {
          port: process.env.PORT,
          spotify: {
             id: process.env.SPOTIFY_ID,
-            secret: process.env.SPOTIFY_SECRET
+            secret: process.env.SPOTIFY_SECRET,
          },
       };
 
@@ -69,7 +69,7 @@ class Omni extends Client {
          .on('disconnect', (name, moved) =>
             this.logger.warn(`Lavalink Node: [${name}] is disconnected. Moved: [${moved}]`)
          )
-         .on('error', (name, error) => this.logger.erro(`Lavalink Node: ${name} threw an error.`));
+         .on('error', (name, error) => this.logger.error(`Lavalink Node: ${name} threw an error.`));
 
       this.socket = io;
    }
@@ -80,11 +80,11 @@ class Omni extends Client {
 
       const queue = new Queue(this, guild);
       this.queue.set(guild.id, queue);
-      
+
       await queue.connect(voice);
       queue.on('disconnect', () => {
          this.queue.delete(guild.id);
-      })
+      });
 
       return queue;
    }
@@ -99,7 +99,7 @@ class Omni extends Client {
 
    async login() {
       try {
-         this.logger.info('Started loading modules')
+         this.logger.info('Started loading modules');
          await this.events.load();
          await this.interactions.load();
          await super.login(this.config.DISCORD_TOKEN);
@@ -107,7 +107,7 @@ class Omni extends Client {
             this.logger.done(`API is running on port: ${this.config.port}`);
          });
       } catch (error) {
-         this.logger.erro(`Error logging in.`, error);
+         this.logger.error(`Error logging in.`, error);
       }
    }
 }
