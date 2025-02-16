@@ -95,7 +95,7 @@ class Queue extends EventEmitter {
          this.new(track);
          track = this.tracks.get(track.id);
 
-         if (metadata.channel) this.channel = metadata.channel;
+         if (metadata?.channel) this.channel = metadata.channel;
 
          if (!track?.metadata?.info?.identifier) {
             const node = this.client.manager.getIdealNode();
@@ -132,10 +132,10 @@ class Queue extends EventEmitter {
          requester: options?.requester,
          ...data,
       };
-      data = this.tracks.set(data.id, data);
+      this.tracks.set(data.id, data);
 
       this.update();
-      
+
       this.emit('newTrack', this, data)
       this.socket();
       return data;
