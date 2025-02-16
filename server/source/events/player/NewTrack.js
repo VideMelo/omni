@@ -6,9 +6,9 @@ class NewTrack extends Event {
    }
 
    async execute(client, queue, track) {
-      if (!queue.metadata.channel) return;
-      if (queue.list.size == 1) return;
-      
+      if (!queue.channel) return;
+      if (queue.tracks.size == 1) return;
+
       const color = await client.embed.color(track.thumbnail);
 
       const Embed = client.embed.new({
@@ -18,7 +18,7 @@ class NewTrack extends Event {
          },
          thumbnail: track?.thumbnail ?? null,
          title: `${track.name.length > 36 ? `${track.name.slice(0, 36)}...` : track.name}`,
-         description: `${track.authors.map((author) => author.name).join(', ')}\n`,
+         description: `${track.artist}\n`,
          fields: [
             {
                name: 'Duration',
@@ -38,7 +38,7 @@ class NewTrack extends Event {
          ],
       });
 
-      await queue.metadata.channel.send({
+      await queue.channel.send({
          embeds: [Embed],
       });
    }

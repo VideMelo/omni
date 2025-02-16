@@ -206,35 +206,35 @@ export default function Dashboard() {
                         {view === 'search'
                            ? search.data.type == 'track'
                               ? search?.items.map((track, index) => (
-                                   <li
-                                      key={index}
-                                      className="flex hover:bg-white/10 p-2 rounded-lg items-center"
-                                   >
-                                      <QueueItem item={track} />
-                                      <Plus
-                                         className="h-6 w-6 text-[#BBC1C4] cursor-pointer"
-                                         onClick={() => {
-                                            socket.emit('new-track', track, () => {
-                                               Event('New Track Added!');
-                                            });
-                                         }}
-                                      />
-                                   </li>
-                                ))
+                                 <li
+                                    key={index}
+                                    className="flex hover:bg-white/10 p-2 rounded-lg items-center"
+                                 >
+                                    <QueueItem item={track} />
+                                    <Plus
+                                       className="h-6 w-6 text-[#BBC1C4] cursor-pointer"
+                                       onClick={() => {
+                                          socket.emit('new-track', track, () => {
+                                             Event('New Track Added!');
+                                          });
+                                       }}
+                                    />
+                                 </li>
+                              ))
                               : null
-                           : queue.list.map((track, index) => (
-                                <li
-                                   key={index}
-                                   className="flex hover:bg-white/10 p-2 rounded-lg items-center"
-                                >
-                                   <QueueItem
-                                      item={track}
-                                      onClick={() => {
-                                         socket.emit('skip-to', track.index);
-                                      }}
-                                   />
-                                </li>
-                             ))}
+                           : queue.tracks.map((track, index) => (
+                              <li
+                                 key={index}
+                                 className="flex hover:bg-white/10 p-2 rounded-lg items-center"
+                              >
+                                 <QueueItem
+                                    item={track}
+                                    onClick={() => {
+                                       socket.emit('skip-to', track.index);
+                                    }}
+                                 />
+                              </li>
+                           ))}
                      </ul>
                   </div>
                ) : (

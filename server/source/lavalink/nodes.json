@@ -1,0 +1,38 @@
+[
+   {
+      "Host": "lava-v4.ajieblogs.eu.org",
+      "Port": 443,
+      "Password": "https://dsc.gg/ajidevserver",
+      "Secure": true
+   },
+   {
+      "Host": "lavalinkv4.serenetia.com",
+      "Port": 443,
+      "Password": "https://dsc.gg/ajidevserver",
+      "Secure": true
+   },
+   {
+      "Host": "lava-all.ajieblogs.eu.org",
+      "Port": 443,
+      "Password": "https://dsc.gg/ajidevserver",
+      "Secure": true
+   },
+   {
+      "Host": "46.202.82.164",
+      "Port": 1027,
+      "Password": "jmlitev4",
+      "Secure": false
+   },
+   {
+      "Host": "lavalink_v4.muzykant.xyz",
+      "Port": 443,
+      "Password": "https://discord.gg/v6sdrD9kPh",
+      "Secure": true
+   },
+   {
+      "Host": "lavalink_v4.muzykant.xyz",
+      "Port": 80,
+      "Password": "https://discord.gg/v6sdrD9kPh",
+      "Secure": false
+   }
+]

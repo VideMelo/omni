@@ -24,5 +24,8 @@
    "private": true,
    "devDependencies": {
       "concurrently": "^8.2.0"
+   },
+   "dependencies": {
+      "tailwind-scrollbar": "^4.0.0"
    }
 }

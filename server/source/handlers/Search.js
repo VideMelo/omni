@@ -1,5 +1,4 @@
 const Spotify = require('./Spotify');
-const Youtube = require('./Youtube');
 
 class Search {
    constructor(client) {
@@ -7,45 +6,138 @@ class Search {
          id: client.config.SPOTIFY_ID,
          secret: client.config.SPOTIFY_SECRET,
       });
-      this.youtube = new Youtube();
+
+      this.client = client;
    }
 
-   /**
-    * Get a serach result from query input
-    * @param {String} input - String query or url
-    * @param {Object} options - Options for search
-    * @returns {Result} Result
-    * @throws {Error} Error
-    * @example
-    * const result = await search.list('You - Dontoliver');
-    * console.log(result);
-    * // Result { type: 'search', tracks: [ Tracks, ... ] }
-    */
-   async list(input, options = {}) {
-      if (this.isUrl(input)) {
-         let info = this.infoUrl(input);
-         console.log(info);
-         if (!info) return;
-         if (info.stream == 'youtube') {
-            const search = await this.youtube.search(input, options);
-            return new Result(search);
+   async list(query, options = { type: 'searchTrack' }) {
+      if (options.type == 'searchTrack') {
+         const result = await this.spotify.search(query, { types: ['track'], limit: 5 })
+         return {
+            type: 'search',
+            items: result.body.tracks.items.map((track) => {
+               return {
+                  type: 'track',
+                  id: track.id,
+                  name: track.name,
+                  artist: track.artists[0].name,
+                  album: track.album.name,
+                  duration: track.duration_ms,
+                  thumbnail: track.album.images[0].url,
+                  popularity: track.popularity, 
+               };
+            }).sort((a, b) => b.popularity - a.popularity)
          }
+      } else if (options.type == 'topResult') {
+         return await this.topResults(query);
       }
-      const search = await this.spotify.search(input, options);
-      return new Result(search);
    }
 
-   /**
-    * Get a track from query input
-    * @param {String} input - String query or url
-    * @param {Object} options - Options for search
-    * @returns {String} Url
-    */
+   async topResults(query) {
+      const [artists, albums, tracks] = await this.spotify
+         .search(query, { types: ['artist', 'album', 'track'], limit: 15 })
+         .then(async (res) => {
+            const tracks = res.body.tracks.items.map((track) => {
+               return {
+                  type: 'track',
+                  id: track.id,
+                  name: track.name,
+                  artist: track.artists[0].name,
+                  album: track.album.name,
+                  duration: track.duration_ms,
+                  thumbnail: track.album.images[0].url,
+                  popularity: track.popularity,
+               };
+            }).sort((a, b) => b.popularity - a.popularity);
+
+            const albums = await Promise.all(
+               res.body.albums.items
+                  .filter((item) => item.album_type == 'album')
+                  .map(async (item, index) => {
+                     if (index > 0)
+                        return {
+                           type: 'album',
+                           id: item.id,
+                           name: item.name,
+                           artist: item.artists[0].name,
+                           thumbnail: item.images[0].url,
+                           popularity: 0,
+                        };
+                     const album = await this.spotify.getAlbum(item.id);
+                     return {
+                        type: 'album',
+                        id: album.id,
+                        name: album.name,
+                        artist: album.artists[0].name,
+                        tracks: album.tracks.items.map((track) => { 
+                           return {
+                              type: 'track',
+                              id: track.id,
+                              name: track.name,
+                              artist: track.artists[0].name,
+                              album: album.name,
+                              duration: track.duration_ms,
+                              thumbnail: album.images[0].url,
+                              popularity: track.popularity,
+                           };
+                        }),
+                        thumbnail: album.images[0].url,
+                        popularity: album.popularity,
+                     };
+                  })
+            );
+
+            const artists = res.body.artists.items
+               .map((artist) => {
+                  return {
+                     type: 'artist',
+                     id: artist.id,
+                     name: artist.name,
+                     thumbnail: artist?.images[0]?.url,
+                     popularity: artist.popularity,
+                  };
+               })
+            
+            return [artists, albums, tracks];
+         });
+
+      const priority = {
+         album: 1.3,
+         artist: 1.1,
+         track: 1.2,
+      };
+      let mathes = [];
+      let result = [tracks[0], albums[0], artists[0]]
+         .map((item) => {
+            if (item.name.toLowerCase().includes(query.toLowerCase())) mathes.push(item); 
+            return item;
+         })
+      
+      if (mathes.length > 1) {
+         result = mathes.sort(
+            (a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]
+         );
+      } else if (mathes.length == 1) {
+         result = mathes;
+      } else {
+         result = result.sort((a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]);
+      }
+      
+      return {
+         type: 'search',
+         tracks: tracks,
+         albums: albums,
+         artists: artists,
+         top: {...result[0]}, 
+      }
+   }
+
    async getUrl(track) {
       try {
          const id = await this.youtube.getId(track.query);
          return `https://youtu.be/${id}`;
       } catch (error) {
+         console.error(error);
          throw new Error(error);
       }
    }
@@ -75,26 +167,12 @@ class Search {
          return {
             stream: 'youtube',
             type: match[6] ? 'playlist' : 'track',
-            id: match[7]
+            id: match[7],
          };
       }
    }
 }
 
-class Result {
-   constructor(data) {
-      console.log(data);
-      this.data = {
-         ...data,
-         type: data?.type == 'search' ? 'track' : data?.type,
-      };
-      this.type = data.type;
-      this.items = Array.isArray(data) ? data : data.tracks || [data];
-      this.starter = data.starter || this?.items[0]?.id || data?.id;
-   }
-}
-
 module.exports = {
    Search,
-   Result,
 };

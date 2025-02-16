@@ -1,28 +1,32 @@
 const colors = require('colors');
 
 class Logger {
-   static info(text) {
+   info(text) {
       console.log(colors.green('[INFO]'), text);
    }
 
-   static warn(text) {
+   warn(text) {
       console.log(colors.yellow('[WARN]'), text);
    }
 
-   static erro(text, erro = '') {
+   erro(text, erro = '') {
       console.error(colors.red('[ERRO]'), text, erro);
    }
 
-   static async(text) {
+   async(text) {
       console.log(colors.magenta('[ASYN]'), text);
    }
 
-   static done(text) {
+   done(text) {
       console.log(colors.blue('[DONE]'), text);
    }
 
-   static test(text) {
+   test(text) {
       console.log(colors.yellow('[TEST]'), text);
+   }
+
+   lava(text) {
+      console.log(colors.grey('[LAVA]'), text)
    }
 }
 

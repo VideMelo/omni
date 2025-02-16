@@ -6,17 +6,22 @@ class QueueEnd extends Event {
    }
 
    async execute(client, queue) {
-      if (!queue.metadata.channel) return;
+      setTimeout(() => {
+         if (!queue.playing) return client.destroyGuildQueue(queue.guild.id);
+      }, 1000);
+
+      if (!queue.channel) return;
 
       const Embed = client.embed.new({
          title: 'Queue ended!',
          color: 'F5C325',
       });
 
-      await queue.metadata.channel.send({
+      await queue.channel.send({
          embeds: [Embed],
       });
    }
 }
 
 module.exports = QueueEnd;
+ 

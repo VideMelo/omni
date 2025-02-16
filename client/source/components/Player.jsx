@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-import { Slider } from '@mui/material';
+import Slider from './Slider';
+import Vibrant from 'node-vibrant';
 
 import socket from '../services/socket';
 
@@ -13,181 +15,209 @@ import Repeat from '../assets/icons/Repeat';
 import RepeatOnce from '../assets/icons/RepeatOnce';
 import VolumeHigh from '../assets/icons/VolumeHigh';
 import VolumeLow from '../assets/icons/VolumeLow';
-import VolumeMute from '../assets/icons/VolumeMute';
-import VolumeNormal from '../assets/icons/VolumeNormal';
+import Plus from '../assets/icons/Plus';
+import Headphone from '../assets/icons/Headphone';
+import List from '../assets/icons/List';
+import Lyrics from '../assets/icons/Lyrics';
 
-function Player(props) {
-   const [playing, setPlaying] = React.useState(false);
-   const [shuffle, setShuffle] = React.useState(false);
-   const [repeat, setRepeat] = React.useState('off');
-   const [duration, setDuration] = React.useState(0);
-   const [position, setPosition] = React.useState(0);
-   const [volume, setVolume] = React.useState(0.5);
-   const [idle, setIdle] = React.useState(true);
+function Player({ metadata, setMetadata }) {
+   const location = useLocation()
 
-   function formatDuration(value) {
-      if (isNaN(value)) return '-:--';
-      const hours = Math.floor(value / 3600);
-      const minutes = Math.floor((value - hours * 3600) / 60);
-      const seconds = Math.floor(value - hours * 3600 - minutes * 60);
-      return `${hours ? hours + ':' : ''}${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-   }
+   const [queue, setQueue] = useState([])
+   const [track, setTrack] = useState(null);
 
-   React.useEffect(() => {
-      socket.on('disconnect', () => setPlaying(false));
-   }, []);
+   const [palette, setPalette] = useState(null);
+   const [timer, setTimer] = useState(0)
+   const [playing, setPlaying] = useState(false)
 
-   React.useEffect(() => {
-      if (!props.data) return;
-      const { config, playing, state, current } = props.data;
+   const [player, setPlayer] = useState(null)
 
-      setShuffle(config.shuffle);
-      setRepeat(config.repeat);
-      setVolume(config.volume);
-
-      setDuration(current?.duration / 1000 || 0);
-      setPosition(current?.position / 1000 || 0);
-
-      setPlaying(playing);
-      setIdle(state == 'idle');
-   }, [props.data]);
-
-   React.useEffect(() => {
+   useEffect(() => {
       if (!playing) return;
       const interval = setInterval(() => {
-         setPosition((prev) => {
-            if (prev >= duration) {
+         setTimer((prev) => {
+            if (prev >= track.duration) {
                clearInterval(interval);
-               setIdle(true);
-               setPlaying(false);
+               setPlaying(false); 
                return 0;
             }
-            return prev + 1;
+            return prev + 1; 
          });
       }, 1000);
       return () => clearInterval(interval);
-   }, [playing, duration]);
+   }, [playing, track, timer]);
 
+   useEffect(() => {
+      setMetadata({queue, player, palette, track, timer})
+   }, [queue, player, palette, track, timer])
+
+   useEffect(() => {
+      socket.emit('sync-voiceChannel', updatePlayer)
+      socket.on('update-player', updatePlayer)
+   }, []); 
+
+   function updatePlayer() {
+      socket.emit('get-queue', (data) => {
+         setQueue(data.list)
+         setTrack({...data.current, duration: data.current?.duration - 2500 | 0})
+         handlePalette(data.current?.thumbnail)
+         console.log(data)
+      })  
+ 
+      socket.emit('get-player', (data) => {
+         setPlayer(data)
+         setPlaying(data.playing)
+         setTimer(data.position / 1000)
+         console.log(data)
+      }) 
+   }
+
+   function handlePalette(image) {
+      if (!image) return
+      function calculateResultingColor(upperColor, lowerColor, alpha) {
+         function calculateChannel(upperChannel, lowerChannel, alpha) {
+            return Math.round(upperChannel * alpha + lowerChannel * (1 - alpha));
+         }
+
+         return [
+            calculateChannel(upperColor[0], lowerColor[0], alpha), // R
+            calculateChannel(upperColor[1], lowerColor[1], alpha), // G
+            calculateChannel(upperColor[2], lowerColor[2], alpha)  // B
+         ];
+      }
+
+      const vibrant = new Vibrant(image);
+      vibrant.getPalette().then((palette) => {
+         const color = palette.Vibrant.rgb;
+         let alpha = calculateResultingColor(color, [0, 0, 0], 0.25);
+         alpha = '#' + alpha
+            .map(canal => {
+               const hex = canal.toString(16);
+               return hex.length === 1 ? '0' + hex : hex;
+            })
+            .join('');
+         setPalette({
+            ...palette,
+            alpha
+         }); 
+      });
+   }
+
+   function handleItemClick(item) {
+      socket.emit('play', item);
+   }
+
+   if (!track || !palette || !player) return null;
    return (
-      <div className=" h-[90px] bg-black w-full flex flex-row justify-end items-center gap-[20vw] fill-white p-11">
-         <div className="flex flex-col items-center">
-            <div className={'flex items-center gap-7' + (idle ? ' opacity-40' : '')}>
-               <button
-                  onClick={() => socket.emit('shuffle', !shuffle)}
-                  className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
-               >
-                  <Shuffle
-                     className={'stroke-neutral-400 w-5 h-5' + (shuffle ? ' stroke-red-600' : '')}
-                  />
-               </button>
-               <div className="flex items-center gap-2">
-                  <button
-                     onClick={() => socket.emit('previous')}
-                     className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
-                  >
-                     <Previous />
+      <div className="flex min-w-[400px] max-w-[400px] flex-col gap-3 h-full">
+         <div className={`relative overflow-auto scrollbar-none h-full flex-col items-center flex rounded-3xl`} style={{ backgroundColor: palette.alpha }}>
+            <div className={`relative w-[400px] h-[400px] duration-700 transi ease-out delay-75 ${location.pathname == '/queue' ? '-mt-[730px]' : ''}`}>
+               <img
+                  src={track.thumbnail}
+                  className="w-full h-full object-cover rounded-t-3xl"
+               />
+               <div className="absolute" style={{
+                  inset: 0,
+                  backgroundImage: `linear-gradient(to bottom, transparent 35%, ${palette.alpha} 100%)`
+               }}></div>
+            </div>
+            <div className="flex flex-col w-full gap-5 px-6 z-[1] -mt-[25px]">
+               <div className="flex flex-col gap-3">
+                  <div className="flex w-full px-1 items-center justify-between">
+                     <div className='w-[85%]'>
+                        <div className="font-semibold text-lg font-poppins truncate">{track.name}</div>
+                        <div className="font-normal text-lg font-poppins text-[#B3B3B3]">
+                           {track.artist}
+                        </div>
+                     </div>
+                     <button onClick={() => socket.emit('',)}>
+                        <Plus className="w-6 h-6" />
+                     </button>
+                  </div>
+                  <Slider value={timer} duration={track.duration / 1000} onChange={(value) => { setTimer(value.time) }} onCommit={(value) => { setTimer(value.time) }} />
+               </div>
+               <div className="flex w-full justify-center gap-10 items-center">
+                  <button onClick={() => socket.emit('previous',)}>
+                     <Previous className="w-[50px] h-[50px] fill-white" />
                   </button>
                   {!playing ? (
                      <button
-                        className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                         onClick={() => socket.emit('resume')}
                      >
-                        <Play />
+                        <Play className="w-16 h-16 fill-white" />
                      </button>
                   ) : (
                      <button
-                        className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
                         onClick={() => socket.emit('pause')}
                      >
-                        <Pause />
+                        <Pause className="w-16 h-16 fill-white" />
                      </button>
                   )}
-                  <button
-                     onClick={() => socket.emit('next')}
-                     className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
-                  >
-                     <Next />
+                  <button onClick={() => socket.emit('next',)}>
+                     <Next className="w-[50px] h-[50px] fill-white" />
                   </button>
                </div>
-               {repeat == 'queue' ? (
-                  <button
-                     className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
-                     onClick={() => socket.emit('repeat', 'track')}
-                  >
-                     <Repeat className="stroke-red-600 w-6 h-6" />
+               <div className="flex w-full justify-center gap-2 items-center">
+                  <button onClick={() => socket.emit('',)}>
+                     <VolumeLow className="w-[30px] h-[30px] fill-white" />
                   </button>
-               ) : repeat == 'track' ? (
-                  <button
-                     className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
-                     onClick={() => socket.emit('repeat', 'off')}
-                  >
-                     <RepeatOnce className="stroke-red-600 w-6 h-6" />
+                  <Slider
+                     value={60}
+                     duration={100}
+                     onChange={() => { }}
+                     onCommit={() => { }}
+                     showTimers={false}
+                  />
+                  <button onClick={() => socket.emit('',)}>
+                     <VolumeHigh className="w-[30px] h-[30px] fill-white" />
                   </button>
-               ) : (
-                  <button
-                     className={idle ? ' cursor-default' : 'hover:opacity-75 active:opacity-100'}
-                     onClick={() => socket.emit('repeat', 'queue')}
-                  >
-                     <Repeat className="stroke-neutral-400 w-6 h-6-6" />
-                  </button>
-               )}
+               </div>
+               <div className="flax w-full rounded-[20px] px-6 py-4 justify-center gap-10 items-center" style={{ backgroundColor: palette.LightVibrant.hex }}>
+                  <div className="font-medium uppercase text-sm text-black text-opacity-50">
+                     Playing From Party
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <Headphone className="w-6 h-6 text-black text-opacity-80" />
+                     <div className="font-medium text-lg text-black text-opacity-80">{ player.metadata.voice.name}</div>
+                  </div>
+               </div>
             </div>
-            <div className={'flex items-center gap-2 w-[50vw]' + (idle ? ' opacity-40' : '')}>
-               <span className="block w-5 text-neutral-400 font-semibold align-middle text-[9px]">
-                  {formatDuration(position)}
-               </span>
-               <Slider
-                  aria-label="progress-bar"
-                  step={1}
-                  min={0}
-                  max={duration}
-                  value={position}
-                  onChange={(e, value) => setPosition(value)}
-                  onChangeCommitted={(e, value) => socket.emit('seek', value * 1000)}
-                  disabled={!duration}
-                  slotProps={{
-                     root: { className: 'group !cursor-default !text-white !py-1 !h-1' },
-                     thumb: {
-                        className: '!h-2 !w-2 !hidden group-hover:!flex !bg-white !shadow-none',
-                     },
-                     track: { className: position ? '!bg-white !flex' : '!hidden' },
-                     rail: { className: '!bg-neutral-400' },
-                  }}
-               />
-               <span className="block w-5 text-neutral-400 font-semibold text-[9px] align-middle">
-                  {formatDuration(duration)}
-               </span>
+            <div className="mt-8 w-full flex flex-1 p-4 flex-col bg-black bg-opacity-50 rounded-[20px]">
+               <div className="flex w-full justify-between px-6 py-2">
+                  <div className="flex gap-4 ">
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => { }}>
+                        <Lyrics className="w-6 h-6 fill-white" />
+                     </button>
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => socket.emit('repeat', 'queue')}>
+                        <Repeat className="w-6 h-6 fill-white" />
+                     </button>
+                  </div>
+                  <div className="flex gap-4">
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => socket.emit('shuffle')}>
+                        <Shuffle className="w-6 h-6 fill-white" />
+                     </button>
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => { }}>
+                        <List className="w-6 h-6 fill-white" />
+                     </button>
+                  </div>
+               </div>
+               <div className="flex flex-col overflow-hidden gap-1 justify-between mt-6">
+                  {queue.map((item) => (
+                     <div key={item.id} className={`flex w-full items-center gap-3 cursor-pointer hover:bg-white hover:bg-opacity-5 rounded-md p-2 ${item.id == track.id ? 'bg-white bg-opacity-5 hover:bg-opacity-10' : ''}`} onClick={() => handleItemClick(item)}>
+                        <img
+                           src={item.thumbnail}
+                           className="h-[50px] w-[50px] rounded-md"
+                        />
+                        <div className='w-full'>
+                           <div className="font-medium text-sm font-poppins text-white w-1/2 truncate">{item.name}</div>
+                           <div className="font-normal text-xs font-poppins text-[#B3B3B3]">
+                              {item.artist}
+                           </div>
+                        </div>
+                     </div>
+                  ))}
+               </div>
             </div>
-         </div>
-         <div className="flex items-center gap-1">
-            <button>
-               {volume == 0 ? (
-                  <VolumeMute className="stroke-neutral-200 w-[18px] h-[18px]" />
-               ) : volume < 0.33 ? (
-                  <VolumeLow className="stroke-neutral-200 w-[18px] h-[18px]" />
-               ) : volume < 0.66 ? (
-                  <VolumeNormal className="stroke-neutral-200 w-[18px] h-[18px]" />
-               ) : (
-                  <VolumeHigh className="stroke-neutral-200 w-[18px] h-[18px]" />
-               )}
-            </button>
-            <Slider
-               aria-label="volume-bar"
-               step={0.01}
-               min={0}
-               max={1}
-               value={volume}
-               onChange={(e, value) => setVolume(value)}
-               onChangeCommitted={(e, value) => socket.emit('volume', value)}
-               slotProps={{
-                  root: { className: 'group !cursor-default !text-white !py-1 !h-1 !w-16' },
-                  thumb: {
-                     className: '!h-2 !w-2 !hidden group-hover:!flex !bg-white !shadow-none',
-                  },
-                  track: { className: volume ? '!bg-white !flex' : '!hidden' },
-                  rail: { className: '!bg-neutral-400' },
-               }}
-            />
          </div>
       </div>
    );

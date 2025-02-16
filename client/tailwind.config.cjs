@@ -1,11 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
    content: [
-      './source/pages/**/*.{js,ts,jsx,tsx,mdx}',
-      './source/components/**/*.{js,ts,jsx,tsx,mdx}',
+      './source/**/*.{js,ts,jsx,tsx,mdx}',
+   ],
+   plugins: [
+      require('tailwind-scrollbar'),
    ],
    theme: {
       extend: {
+         fontFamily: {
+            poppins: ['Poppins', 'sans-serif'],
+            rubik: ['Rubik', 'sans-serif']
+         },
          colors: {
             'blue-100': '#A2B3FF',
             'blue-200': '#839AFF',

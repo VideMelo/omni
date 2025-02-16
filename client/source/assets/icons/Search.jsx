@@ -2,27 +2,10 @@ import React from 'react';
 
 export default function Search(props) {
    return (
-      <svg viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-         <g opacity="0.8">
-            <path
-               d="M1.01584 10.1034C1.01584 5.28286 4.9237 1.375 9.74429 1.375C14.5649 1.375 18.4727 5.28286 18.4727 10.1034C18.4727 14.9241 14.5649 18.8319 9.74429 18.8319C4.9237 18.8319 1.01584 14.9241 1.01584 10.1034Z"
-               fill="none"
-            />
-            <path
-               d="M21.2658 21.625L16.0288 16.3879"
-               stroke="currentColor"
-               strokeWidth="2"
-               strokeLinecap="round"
-               strokeLinejoin="round"
-            />
-            <path
-               d="M1.01584 10.1034C1.01584 5.28286 4.9237 1.375 9.74429 1.375C14.5649 1.375 18.4727 5.28286 18.4727 10.1034C18.4727 14.9241 14.5649 18.8319 9.74429 18.8319C4.9237 18.8319 1.01584 14.9241 1.01584 10.1034Z"
-               stroke="currentColor"
-               strokeWidth="2"
-               strokeLinecap="round"
-               strokeLinejoin="round"
-            />
-         </g>
+      <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+         <path d="M11 19.5C15.4183 19.5 19 15.9183 19 11.5C19 7.08172 15.4183 3.5 11 3.5C6.58172 3.5 3 7.08172 3 11.5C3 15.9183 6.58172 19.5 11 19.5Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+         <path d="M20.9999 21.4999L16.6499 17.1499" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+
    );
 }

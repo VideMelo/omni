@@ -3,11 +3,11 @@ const Logger = require('../../utils/logger');
 
 class NowPlaying extends Event {
    constructor() {
-      super({ name: 'playing' });
+      super({ name: 'nowPlaying' });
    }
 
    async execute(client, queue, track) {
-      if (!queue.metadata.channel) return;
+      if (!queue.channel) return;
 
       const color = await client.embed.color(track?.thumbnail);
 
@@ -18,16 +18,16 @@ class NowPlaying extends Event {
          },
          thumbnail: track?.thumbnail ?? null,
          title: `${track.name.length > 36 ? `${track.name.slice(0, 36)}...` : track.name}`,
-         description: `${track.authors.map((author) => author.name).join(', ')}`,
+         description: `${track.artist}`,
       });
 
       try {
-         const last = queue.metadata.message;
-         const message = await queue.metadata.channel.send({
+         const last = queue.message;
+         const message = await queue.channel.send({
             embeds: [Embed],
             components: [],
          });
-         queue.metadata.message = message;
+         queue.message = message;
          await last?.delete();
       } catch (error) {
          if (error.code == 10008) return;
