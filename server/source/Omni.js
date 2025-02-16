@@ -30,13 +30,21 @@ class Omni extends Client {
             intents.GuildMembers,
          ],
       });
-      this.config = process.env;
+      this.config = {
+         token: process.env.DISCORD_TOKEN,
+         id: process.env.DISCORD_ID,
+         port: process.env.PORT,
+         spotify: {
+            id: process.env.SPOTIFY_ID,
+            secret: process.env.SPOTIFY_SECRET
+         },
+      };
 
       this.logger = new Logger();
 
       this.button = new Button(this);
       this.embed = new Embed(this);
-      this.errors = new Errors();
+      this.errors = new Errors(this);
 
       this.search = new Search(this);
       this.queue = new Collection();
@@ -45,21 +53,21 @@ class Omni extends Client {
       this.events = new Events(this);
 
       this.nodes = JSON.parse(fs.readFileSync('./source/lavalink/nodes.json')).map((node) => ({
-         name: node.Host,
+         name: node.Name,
          url: `${node.Host}:${node.Port}`,
          auth: node.Password,
          secure: node.Secure,
       }));
 
       this.manager = new Shoukaku(new Connectors.DiscordJS(this), this.nodes)
-         .on('ready', (name) => this.logger.done(`Lavalink Node: ${name} is connected`))
+         .on('ready', (name, url, ls, sl) => this.logger.done(`Lavalink Node Connected: ${name}`))
          .on('reconnecting', (name, left, timeout) =>
             this.logger.async(
-               `Lavalink Node: ${name} is reconnecting. Tries Left: ${left} | Timeout: ${timeout}s`
+               `Lavalink Node [${name}] is reconnecting. Tries Left: ${left} | Timeout: ${timeout}s`
             )
          )
          .on('disconnect', (name, moved) =>
-            this.logger.warn(`Lavalink Node: ${name} is disconnected. Moved: ${moved}`)
+            this.logger.warn(`Lavalink Node: [${name}] is disconnected. Moved: [${moved}]`)
          )
          .on('error', (name, error) => this.logger.erro(`Lavalink Node: ${name} threw an error.`));
 
@@ -72,7 +80,11 @@ class Omni extends Client {
 
       const queue = new Queue(this, guild);
       this.queue.set(guild.id, queue);
+      
       await queue.connect(voice);
+      queue.on('disconnect', () => {
+         this.queue.delete(guild.id);
+      })
 
       return queue;
    }
@@ -87,11 +99,12 @@ class Omni extends Client {
 
    async login() {
       try {
+         this.logger.info('Started loading modules')
          await this.events.load();
          await this.interactions.load();
          await super.login(this.config.DISCORD_TOKEN);
-         server.listen(this.config.PORT, () => {
-            this.logger.done(`API is running on port: ${this.config.PORT}`);
+         server.listen(this.config.port, () => {
+            this.logger.done(`API is running on port: ${this.config.port}`);
          });
       } catch (error) {
          this.logger.erro(`Error logging in.`, error);

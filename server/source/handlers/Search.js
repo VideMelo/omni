@@ -3,8 +3,8 @@ const Spotify = require('./Spotify');
 class Search {
    constructor(client) {
       this.spotify = new Spotify({
-         id: client.config.SPOTIFY_ID,
-         secret: client.config.SPOTIFY_SECRET,
+         id: client.config.spotify.id,
+         secret: client.config.spotify.secret,
       });
 
       this.client = client;
@@ -21,7 +21,7 @@ class Search {
                   id: track.id,
                   name: track.name,
                   artist: track.artists[0].name,
-                  album: track.album.name,
+                  album: track.album.name, 
                   duration: track.duration_ms,
                   thumbnail: track.album.images[0].url,
                   popularity: track.popularity, 

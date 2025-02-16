@@ -7,4 +7,3 @@ const client = new Bot();
 client.login();
 
 module.exports = client;
- 

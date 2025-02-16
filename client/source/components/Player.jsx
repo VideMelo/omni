@@ -38,38 +38,49 @@ function Player({ metadata, setMetadata }) {
          setTimer((prev) => {
             if (prev >= track.duration) {
                clearInterval(interval);
-               setPlaying(false); 
+               setPlaying(false);
                return 0;
             }
-            return prev + 1; 
+            return prev + 1;
          });
       }, 1000);
       return () => clearInterval(interval);
    }, [playing, track, timer]);
 
    useEffect(() => {
-      setMetadata({queue, player, palette, track, timer})
+      setMetadata({ queue, player, palette, track, timer })
    }, [queue, player, palette, track, timer])
 
    useEffect(() => {
       socket.emit('sync-voiceChannel', updatePlayer)
-      socket.on('update-player', updatePlayer)
-   }, []); 
+      socket.on('updatePlayer', updatePlayer)
+   }, []);
+
+   function setInitialState() {
+      setQueue([])
+      setTrack(null)
+      setPlayer(null)
+      setPlaying(false)
+      setTimer(0)
+      setPalette(null)
+   }
 
    function updatePlayer() {
-      socket.emit('get-queue', (data) => {
+      socket.emit('getQueue', (data) => {
+         if (!data) return setInitialState()
          setQueue(data.list)
-         setTrack({...data.current, duration: data.current?.duration - 2500 | 0})
+         setTrack({ ...data.current, duration: data.current?.duration - 2500 | 0 })
          handlePalette(data.current?.thumbnail)
          console.log(data)
-      })  
- 
-      socket.emit('get-player', (data) => {
+      })
+
+      socket.emit('getPlayer', (data) => {
+         if (!data) return setInitialState()
          setPlayer(data)
          setPlaying(data.playing)
          setTimer(data.position / 1000)
          console.log(data)
-      }) 
+      })
    }
 
    function handlePalette(image) {
@@ -99,7 +110,7 @@ function Player({ metadata, setMetadata }) {
          setPalette({
             ...palette,
             alpha
-         }); 
+         });
       });
    }
 
@@ -178,7 +189,7 @@ function Player({ metadata, setMetadata }) {
                   </div>
                   <div className="flex items-center gap-2">
                      <Headphone className="w-6 h-6 text-black text-opacity-80" />
-                     <div className="font-medium text-lg text-black text-opacity-80">{ player.metadata.voice.name}</div>
+                     <div className="font-medium text-lg text-black text-opacity-80">{player.metadata.voice.name}</div>
                   </div>
                </div>
             </div>

@@ -5,7 +5,7 @@ const MAX_REQUESTS_CUSTOM = {
    next: 3,
    previous: 3,
 };
-const IGNORED_EVENTS = ['get-queue', 'get-player', 'set-user', 'sync-voiceChannel', 'search'];
+const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'set-user', 'sync-voiceChannel', 'search'];
 
 const requests = new Map();
 module.exports = (io) => {
@@ -73,14 +73,14 @@ module.exports = (io) => {
          return { queue, voice, requester };
       }
 
-      socket.on('get-queue', (callback) => {
+      socket.on('getQueue', (callback) => {
          if (!socket.guild) return;
 
          const queue = client.queue.get(socket.guild);
-         if (!queue) return;
+         if (!queue) return callback(undefined);
 
          client.logger.info(
-            `user: ${socket.user} with ${socket.id} get-queue, in guild: ${socket.guild}`
+            `user: ${socket.user} with ${socket.id} getQueue, in guild: ${socket.guild}`
          );
 
          if (typeof callback == 'function')
@@ -90,14 +90,14 @@ module.exports = (io) => {
             });
       });
 
-      socket.on('get-player', (callback) => {
+      socket.on('getPlayer', (callback) => {
          if (!socket.guild) return;
 
          const queue = client.queue.get(socket.guild);
-         if (!queue) return;
+         if (!queue) return callback(undefined)
 
          client.logger.info(
-            `user: ${socket.user} with ${socket.id} get-player, in guild: ${socket.guild}`
+            `user: ${socket.user} with ${socket.id} getPlayer, in guild: ${socket.guild}`
          );
 
          if (typeof callback == 'function')

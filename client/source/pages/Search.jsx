@@ -33,9 +33,12 @@ export default function Page() {
    }, [navigate, query]);
 
    function handleItemClick(item) {
-      socket.emit('play', item, (result) => {
-         console.log(result);
-      });
+      socket.emit('sync-voiceChannel', () => {
+         socket.emit('play', item, (result) => {
+            console.log(result);
+         });
+      })
+      
    }
 
    if (loading) return (

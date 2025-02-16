@@ -1,9 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
-const Logger = require('../utils/logger');
 
 class Interaction extends SlashCommandBuilder {
    constructor(client, { name = '', description = '', exemple = '', usage = '', direct = false }) {
       super();
+      this.client;
 
       this.setName(name);
       this.setDescription(description);
@@ -16,12 +16,12 @@ class Interaction extends SlashCommandBuilder {
    }
 
    autocomplete() {
-      Logger.erro(`${this.name}.js - An 'autocomplete' method is required`);
+      this.client.logger.erro(`${this.name}.js - An 'autocomplete' method is required`);
       throw new Error();
    }
 
    execute() {
-      Logger.erro(`${this.name}.js - An 'execute' method is required`);
+      this.client.logger.erro(`${this.name}.js - An 'execute' method is required`);
       throw new Error();
    }
 }

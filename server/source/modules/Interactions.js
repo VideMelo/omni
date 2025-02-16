@@ -47,7 +47,7 @@ class Interactions {
    }
 
    async deploy() {
-      const rest = new Discord.REST({ version: '10' }).setToken(this.client.config.DISCORD_TOKEN);
+      const rest = new Discord.REST({ version: '10' }).setToken(this.client.config.token);
 
       try {
          if (this.items.size == 0) {
@@ -57,7 +57,7 @@ class Interactions {
 
          this.client.logger.async(`Started deploying interactions:`);
          const data = await rest.put(
-            Discord.Routes.applicationCommands(this.client.config.DISCORD_ID),
+            Discord.Routes.applicationCommands(this.client.config.id),
             {
                body: this.items.map((interaction) => interaction),
             }
@@ -108,30 +108,16 @@ class InteractionContext {
    constructor(client, interaction) {
       this.client = client;
       this.interaction = interaction;
-   }
-
-   reply(...prev) {
-      return this.interaction.reply(...prev);
-   }
-
-   deferReply(...prev) {
-      return this.interaction.deferReply(...prev);
-   }
-
-   editReply(...prev) {
-      return this.interaction.editReply(...prev);
-   }
-
-   deleteReply(...args) {
-      return this.interaction.deleteReply(...args);
-   }
-
-   fetchReply(...args) {
-      return this.interaction.fetchReply(...args);
-   }
-
-   get options() {
-      return this.interaction.options;
+      
+      return new Proxy(this, {
+         get: (target, prop) => {
+            if (prop in target) {
+               return target[prop];
+            } else {
+               return this.interaction[prop]
+            }
+         },
+      });
    }
 
    get user() {
@@ -144,15 +130,8 @@ class InteractionContext {
 
    get me() {
       return this.interaction.guild?.members.me || undefined;
-   }
+   } 
 
-   get guild() {
-      return this.interaction.guild;
-   }
-
-   get channel() {
-      return this.interaction.channel;
-   }
 
    get queue() {
       return this.client.queue.get(this.interaction.guild.id);

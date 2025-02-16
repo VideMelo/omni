@@ -1,5 +1,4 @@
 const Event = require('../../handlers/Event');
-const Logger = require('../../utils/logger');
 
 class NowPlaying extends Event {
    constructor() {
@@ -31,7 +30,7 @@ class NowPlaying extends Event {
          await last?.delete();
       } catch (error) {
          if (error.code == 10008) return;
-         Logger.erro(error);
+         client.logger.erro(error);
       }
    }
 }

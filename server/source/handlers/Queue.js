@@ -23,7 +23,7 @@ class Queue extends EventEmitter {
       this.volume = 0.5;
    }
 
-   socket(destination = this.guild.id, action = 'update-player') {
+   socket(destination = this.guild.id, action = 'updatePlayer') {
       return this.client.socket.to(destination).emit(action);
    }
 
@@ -42,7 +42,7 @@ class Queue extends EventEmitter {
                this.emit('nowPlaying', this, this.current);
                this.socket();
             })
-            .on('closed', (data) => this.disconnect)
+            .on('closed', (data) => this.disconnect())
             .on('stuck', (data) => {
                console.log('stuck', data);
             })
@@ -85,8 +85,9 @@ class Queue extends EventEmitter {
 
       this.client.manager.leaveVoiceChannel(this.guild.id);
 
+      this.emit('disconnect');
+      this.socket()
       this.removeAllListeners();
-      this.socket();
    }
 
    async play(track, metadata) {
@@ -136,7 +137,7 @@ class Queue extends EventEmitter {
 
       this.update();
 
-      this.emit('newTrack', this, data)
+      this.emit('newTrack', this, data);
       this.socket();
       return data;
    }
