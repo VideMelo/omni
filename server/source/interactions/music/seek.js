@@ -18,13 +18,11 @@ class Seek extends Interaction {
       try {
          const queue = client.queue.get(context.guild.id);
 
-         if (
-            client.errors.verify(context, {
-               errors: ['userNotInVoice', 'inSameVoice', 'emptyQueue'],
-               queue,
-            })
-         )
-            return;
+         const errors = client.errors.verify(context, {
+            errors: ['emptyQueue', 'userNotInVoice', 'inSameVoice'],
+            queue,
+         });
+         if (errors) return;
 
          const position = context.options.getString('position');
 

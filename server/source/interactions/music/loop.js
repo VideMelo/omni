@@ -12,13 +12,11 @@ class Loop extends Interaction {
       try {
          const queue = client.queue.get(context.guild.id);
 
-         if (
-            client.errors.verify(context, {
-               errors: ['userNotInVoice', 'inSameVoice', 'emptyQueue'],
-               queue,
-            })
-         )
-            return;
+         const errors = client.errors.verify(context, {
+            errors: ['emptyQueue', 'userNotInVoice', 'inSameVoice'],
+            queue,
+         });
+         if (errors) return;
 
          queue.setRepeat(
             queue.repeat == 'off' ? 'queue' : queue.repeat == 'queue' ? 'track' : 'off'

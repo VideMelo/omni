@@ -8,6 +8,7 @@ const MAX_REQUESTS_CUSTOM = {
 const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'set-user', 'syncVoiceChannel', 'search'];
 
 const requests = new Map();
+
 module.exports = (io) => {
    io.use((socket, next) => {
       if (!requests.has(socket.id)) {
@@ -26,9 +27,34 @@ module.exports = (io) => {
             return next();
          }
 
-         if (socket.warns > 20) {
-            socket.emit('error', 'userBlocked');
-            return client.logger.error(`User blocked: [${socket.user}]`);
+         if (socket.warns >= 25) {
+            socket.emit('status', {
+               type: 'error',
+               message: `User blocked!`,
+            });
+
+            return client.logger.error(`User warned: [${socket.user}]`);
+         } else if (socket.warns == 24) {
+            socket.emit('status', {
+               type: 'error',
+               message: `Okay, I only have one option left.`,
+            });
+
+            client.logger.error(`User warned: [${socket.user}]`);
+         } else if (socket.warns == 23) {
+            socket.emit('status', {
+               type: 'error',
+               message: `Damn bro, are you sure about that?`,
+            });
+
+            client.logger.error(`User warned: [${socket.user}]`);
+         } else if (socket.warns >= 20) {
+            socket.emit('status', {
+               type: 'error',
+               message: `If you keep this up, you will be blocked!`,
+            });
+
+            client.logger.error(`User warned: [${socket.user}]`);
          }
 
          const now = Date.now();
@@ -45,7 +71,11 @@ module.exports = (io) => {
 
          if (data[event].count > maxRequests) {
             client.logger.error(`Event rate limit: [${event}], user: ${socket.user}`);
-            socket.emit('error', 'rateLimit');
+            if (socket.warns < 20)
+               socket.emit('status', {
+                  type: 'error',
+                  message: `You are making requests too quickly; please wait a moment before making the next one!!`,
+               });
             socket.warns++;
             return;
          }
@@ -54,30 +84,32 @@ module.exports = (io) => {
          next();
       });
 
-      function validate() {
+      async function validate() {
          if (!socket?.user) return;
 
          if (!socket.guild || !socket?.voice) {
             const data = { error: { status: 404, message: 'userNotSyncVoiceChannel' } };
-            socket.emit('error', data.error.message);
+            socket.emit('status', { type: 'error', ...data.error });
             return data;
          }
 
-         const queue = client.queue.get(socket.guild);
+         let queue = client.queue.get(socket.guild);
+
+         if (!queue) {
+            queue = await client.initGuildQueue({
+               guild: socket.guild,
+               voice: socket.voice,
+            });
+         }
+
          const voice = queue?.voice;
-
-         if (!queue || !voice) {
-            const data = { error: { status: 404, message: 'queueNotFound' } };
-            socket.emit('error', data.error.message);
-            return data;
-         }
 
          const requester = voice.members.get(socket.user);
          if (!requester) {
             const data = {
                error: { status: 403, message: 'userNotInQueueChannel' },
             };
-            socket.emit('error', data.error.message);
+            socket.emit('status', { type: 'warn', ...data.error });
             return data;
          }
 
@@ -85,7 +117,8 @@ module.exports = (io) => {
       }
 
       socket.on('getQueue', (callback) => {
-         if (!socket.guild || !socket.voice) if (typeof callback == 'function') return callback(undefined);
+         if (!socket.guild || !socket.voice)
+            if (typeof callback == 'function') return callback(undefined);
 
          const queue = client.queue.get(socket.guild);
          if (!queue) if (typeof callback == 'function') return callback(undefined);
@@ -102,7 +135,8 @@ module.exports = (io) => {
       });
 
       socket.on('getPlayer', (callback) => {
-         if (!socket.guild || !socket.voice) if (typeof callback == 'function') return callback(undefined);
+         if (!socket.guild || !socket.voice)
+            if (typeof callback == 'function') return callback(undefined);
 
          const queue = client.queue.get(socket.guild);
          if (!queue) if (typeof callback == 'function') return callback(undefined);
@@ -131,68 +165,73 @@ module.exports = (io) => {
       });
 
       socket.on('play', async (track, callback) => {
-         const data = validate();
+         const data = await validate();
          if (data.error) return;
 
          data.queue.play(track, { requester: socket.user });
       });
 
       socket.on('newTrack', async (track, callback) => {
-         const data = validate();
+         const data = await validate();
          if (data.error) return;
          track = {
             ...track,
             resquester: socket.user | 0,
          };
+
          data.queue.new(track, { type: 'track' });
+         socket.emit('status', {
+            type: 'done',
+            message: `New track added to queue!`,
+         });
          if (typeof callback == 'function') callback(data.queue.tracks);
       });
 
-      socket.on('skipTo', (index) => {
-         const data = validate();
+      socket.on('skipTo', async (index) => {
+         const data = await validate();
          if (data.error) return;
 
          data.queue.play(data.queue.skip(index), { state: 'update', emit: true });
       });
 
-      socket.on('pause', () => {
-         const data = validate();
+      socket.on('pause', async () => {
+         const data = await validate();
          if (data.error) return;
 
          if (!data.queue.playing) return;
          data.queue.pause();
       });
 
-      socket.on('resume', () => {
-         const data = validate();
+      socket.on('resume', async () => {
+         const data = await validate();
          if (data.error) return;
 
          if (data.queue.playing) return;
          data.queue.unpause();
       });
 
-      socket.on('next', () => {
-         const data = validate();
+      socket.on('next', async () => {
+         const data = await validate();
          if (data.error) return;
 
          data.queue.play(data.queue.next(true));
       });
 
-      socket.on('previous', () => {
-         const data = validate();
+      socket.on('previous', async () => {
+         const data = await validate();
          if (data.error) return;
          data.queue.play(data.queue.previous(true), { state: 'update', emit: true });
       });
 
-      socket.on('repeat', (value) => {
-         const data = validate();
+      socket.on('repeat', async (value) => {
+         const data = await validate();
          if (data.error) return;
 
          data.queue.setRepeat(value);
       });
 
-      socket.on('shuffle', (value) => {
-         const data = validate();
+      socket.on('shuffle', async (value) => {
+         const data = await validate();
          if (data.error) return;
 
          if (value) {
@@ -202,15 +241,15 @@ module.exports = (io) => {
          }
       });
 
-      socket.on('volume', (value) => {
-         const data = validate();
+      socket.on('volume', async (value) => {
+         const data = await validate();
          if (data.error) return;
 
          data.queue.volume(value);
       });
 
-      socket.on('seek', (value) => {
-         const data = validate();
+      socket.on('seek', async (value) => {
+         const data = await validate();
          if (data.error) return;
 
          data.queue.seek(value);

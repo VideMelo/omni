@@ -23,6 +23,13 @@ module.exports = (io) => {
       });
 
       socket.on('syncVoiceChannel', async (callback) => {
+         const status = Date.now();
+         socket.emit('status', {
+            type: 'async',
+            message: 'Synchronizing with your voice channel',
+            async: status,
+         });
+
          if (!socket.user) {
             for (let i = 0; i != 10; i++) {
                await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -42,13 +49,17 @@ module.exports = (io) => {
          member = member.filter(Boolean)[0];
 
          if (!member) {
-            if (socket?.guild) {
-               socket.leave(socket.guild)
+            if (socket?.voice) {
+               socket.leave(socket?.guild);
+               socket.voice = undefined;
                socket.guild = undefined;
-               socket.voice = undefined 
             }
             if (typeof callback == 'function') callback();
-            return socket.emit('error', 'userNotFound');
+            return socket.emit('status', {
+               type: 'error',
+               message: `I couldn't find you, make sure you're on a voice channel where I can see you!`,
+               respond: status,
+            });
          }
 
          const channel = member.voice.channel;
@@ -57,9 +68,15 @@ module.exports = (io) => {
 
          if (queue?.voice)
             if (queue.voice.id !== channel.id) {
+               socket.leave(socket?.guild);
                socket.voice = undefined;
+               socket.guild = undefined;
                if (typeof callback == 'function') callback();
-               return socket.emit('error', 'userNotInQueueChannel');
+               return socket.emit('status', {
+                  type: 'warn',
+                  message: `I'm in another voice channel, on the server you're on, join to listen to music!`,
+                  respond: status,
+               });
             }
 
          if (!socket?.voice || !socket?.guild) {
@@ -67,12 +84,22 @@ module.exports = (io) => {
             socket.guild = guild.id;
             socket.voice = channel.id;
 
+            socket.emit('status', {
+               type: 'done',
+               message: queue?.voice?.id == channel.id ? `Playing in [${channel.name}]` : undefined,
+               respond: status,
+            });
+
             client.logger.info(
                `user: ${socket.user} with ${socket.id} syncVoiceChannel, guild: ${socket.guild} in voice: ${socket.voice}`
             );
-            await client.initGuildQueue(guild, channel)
+            if (typeof callback == 'function') return callback();
          }
-         if (typeof callback == 'function') callback();
+         socket.emit('status', {
+            type: 'done',
+            respond: status,
+         });
+         if (typeof callback == 'function') return callback();
       });
-   }); 
+   });
 };

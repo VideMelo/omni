@@ -158,7 +158,7 @@ class InteractionContext {
             });
       } catch {
          await this.interaction.channel.send({
-            embeds: [Embed.setDescription(`<@${this.interaction.user.id}> + ${message}`)],
+            embeds: [Embed.setDescription(`<@${this.interaction.user.id}> - ${message}`)],
          });
       }
    }

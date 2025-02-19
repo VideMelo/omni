@@ -1,16 +1,16 @@
 const Interaction = require('../../handlers/Interaction.js');
 
-class Leave extends Interaction {
+class Stop extends Interaction {
    constructor(client) {
       super(client, {
-         name: 'leave',
-         description: 'Leave to a voice channel!',
+         name: 'stop',
+         description: 'Stop to a voice channel!',
       });
    }
 
    async execute({ client, context }) {
       try {
-         if (client.errors.verify(context, { errors: ['botNotInVoice', 'botNotInVoice'] })) return;
+         if (client.errors.verify(context, { errors: ['botNotInVoice'] })) return;
 
          const queue = client.queue.get(context.guild.id);
          if (!queue) return;
@@ -24,4 +24,4 @@ class Leave extends Interaction {
    }
 }
 
-module.exports = Leave;
+module.exports = Stop;

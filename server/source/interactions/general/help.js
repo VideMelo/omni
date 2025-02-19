@@ -15,15 +15,15 @@ class Help extends Interaction {
       );
    }
 
-   async autocomplete({ client, context }) {
+   async autocomplete({ client, interaction }) {
       const commands = client.interactions.items.map((command) => command);
 
-      const focused = context.options.getFocused();
+      const focused = interaction.options.getFocused();
       const choices = commands.map((command) => command.name);
       const filtered = choices.filter((choice) => choice.startsWith(focused));
-      await context.respond(filtered.map((choice) => ({ name: choice, value: choice })));
+      await interaction.respond(filtered.map((choice) => ({ name: choice, value: choice })));
    }
-
+ 
    async execute({ client, context }) {
       try {
          const input = context.options.getString('command');

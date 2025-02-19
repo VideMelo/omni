@@ -1,5 +1,5 @@
 class Errors {
-   verify(interaction, options = { errors: [] }) {
+   verify(interaction, options = { errors: [], respond: true }) {
       const errors = {
          userNotInVoice: {
             error: !interaction.member?.voice?.channel,
@@ -27,8 +27,10 @@ class Errors {
       };
       for (const error of options.errors) {
          if (errors[error].error) {
-            interaction.replyErro(errors[error].message);
-            return true;
+            if (options?.respond) {
+               interaction.replyErro(errors[error].message);
+               return true;
+            } else return { type: error, message: errors[error].message };
          }
       }
       return false;

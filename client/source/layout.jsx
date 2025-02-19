@@ -6,18 +6,18 @@ import Header from './components/Header';
 import { useEffect, useState } from 'react';
 import socket from './services/socket';
 
-import Error from './components/Error';
+import Status from './components/Status';
 
 export default function RootLayout() {
    const [metadata, setMetadata] = useState(null)
-   const [error, setError] = useState()
+   const [status, setStatus] = useState()
 
    useEffect(() => {
-      socket.on('error', (erro) => {
-         setError({ erro, index: error?.index + 1 | 0 })
+      let cont = 0
+      socket.on('status', (item) => {
+         setStatus({ ...item, index: cont++ })
       })
    }, [])
-
    return (
       <div className='main overflow-hidden scrollbar-none'>
          <Header />
@@ -27,7 +27,7 @@ export default function RootLayout() {
                <div className='min-w-0 w-full box-border overflow-auto scrollbar-none h-full bg-opacity-10 flex-col items-center flex rounded-3xl bg-white'>
                   <Outlet context={{ metadata, setMetadata }} />
                </div>
-               <Error erro={error} styles='absolute left-6 bottom-6' notVisible={'opacity-0'} visible={'opacity-100'} />
+               <Status status={status} styles='absolute right-1/2 left-1/2 bottom-6' hidden={'opacity-0'} visible={'opacity-100'} />
             </div>
             <Player metadata={metadata} setMetadata={setMetadata} />
          </div>

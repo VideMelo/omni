@@ -16,13 +16,11 @@ class Volume extends Interaction {
       try {
          const queue = client.queue.get(context.guild.id);
 
-         if (
-            client.errors.verify(context, {
-               errors: ['userNotInVoice', 'inSameVoice', 'emptyQueue'],
-               queue,
-            })
-         )
-            return;
+         const errors = client.errors.verify(context, {
+            errors: ['emptyQueue', 'userNotInVoice', 'inSameVoice'],
+            queue,
+         });
+         if (errors) return;
 
          const volume = context.options.getInteger('volume');
          if (volume < 0 || volume > 100)

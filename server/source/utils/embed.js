@@ -22,7 +22,7 @@ class Embed {
       if (timestamp) embed.setTimestamp();
       if (thumbnail) embed.setThumbnail(thumbnail);
       if (author) embed.setAuthor(author);
-      if (footer) embed.setFooter(footer);
+      if (footer) embed.setFooter(footer); 
 
       return embed;
    }

@@ -14,7 +14,6 @@ class QueueEnd extends Event {
 
       const Embed = client.embed.new({
          title: 'Queue ended!',
-         color: 'F5C325',
       });
 
       await queue.channel.send({

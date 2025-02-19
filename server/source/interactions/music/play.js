@@ -12,99 +12,76 @@ class Play extends Interaction {
       });
 
       this.addStringOption((option) =>
-         option.setName('input').setDescription('Search a music name!').setRequired(true)
+         option
+            .setName('input')
+            .setDescription('Search a music name!')
+            .setRequired(true)
+            .setAutocomplete(true)
       );
+   }
+
+   async autocomplete({ client, interaction }) {
+      try {
+         const error = client.errors.verify(interaction, {
+            errors: ['userNotInVoice', 'inSameVoice'],
+            respond: false,
+         });
+         if (error) {
+            return await interaction.respond([
+               {
+                  name: `${error.message} Please join one to play music!`,
+                  value: `403`, // ;-;
+               },
+            ]);
+         }
+
+         const focused = interaction.options.getFocused();
+         if (!focused) return await interaction.respond([]);
+
+         const search = await client.search.list(focused);
+         const tracks = search.items.map((track) => {
+            const { artist, name } = track;
+            const item =
+               `${name} - ${artist}`.length > 100
+                  ? `${name.slice(0, 100 - artist.length - 6)}... - ${artist}`
+                  : `${name} - ${artist}`;
+            return { name: item, value: item };
+         });
+
+         await interaction.respond(tracks);
+      } catch (error) {
+         console.error(error);
+         throw new Error(error);
+      }
    }
 
    async execute({ client, context }) {
       try {
-         if (
-            client.errors.verify(context, {
-               errors: ['userNotInVoice', 'inSameVoice', 'botNotInVoice'],
-            })
-         )
-            return;
-
-         await context.deferReply({ flags: Discord.MessageFlags.Ephemeral });
-
-         const queue = client.queue.get(context.guild.id);
+         const errors = client.errors.verify(context, {
+            errors: ['userNotInVoice', 'inSameVoice'],
+         });
+         if (errors) return;
 
          const input = context.options.getString('input');
 
-         let search;
-         try {
-            search = await client.search.list(input);
-         } catch (error) {
-            client.logger.error(error);
+         await context.deferReply();
 
-            return context.replyErro('An error occurred while searching, please try again later.');
-         }
+         const search = await client.search.list(input);
+         if (!search) return await context.replyErro('No tracks found.');
 
-         if (search) {
-            if (search.type == 'search') {
-               const results = search.items.map((result, index) => {
-                  return {
-                     label: `${result.name}`,
-                     description: result.artist,
-                     value: `${index}`,
-                  };
-               });
-               const select = client.button.menu({
-                  id: 'results',
-                  placeholder: `Results to: ${input}`,
-                  options: results,
-               });
-               const row = client.button.row([select]);
-               const message = await context.editReply({
-                  components: [row],
-               });
+         const queue = await client.initGuildQueue({
+            guild: context.guild,
+            voice: context.member.voice.channel,
+            channel: context.channel,
+         });
+         const track = await queue.play(search.items[0]);
 
-               const collector = message.createMessageComponentCollector({
-                  componentType: Discord.ComponentType.StringSelect,
-                  time: 30000,
-               });
-
-               collector.on('collect', async (collect) => {
-                  const track = search.items[parseInt(collect.values[0])];
-
-                  await collect.deferReply();
-
-                  await queue.play(track, {
-                     voice: context.member.voice.channel,
-                     guild: context.channel.guild,
-                     requester: context.user,
-                     channel: context.channel,
-                  });
-
-                  await collector.stop();
-                  await collect.deleteReply();
-               });
-
-               collector.on('end', async () => {
-                  await context.deleteReply();
-               });
-            } else if (search.type == 'track') {
-               await queue.play(search.items[0], {
-                  voice: context.member.voice.channel,
-                  guild: context.channel.guild,
-                  requester: context.user,
-                  channel: context.channel,
-               });
-               await context.deleteReply();
-            } else if (search.type == 'list') {
-               await queue.play(search, {
-                  voice: context.member.voice.channel,
-                  guild: context.channel.guild,
-                  requester: context.user,
-                  channel: context.channel,
-               });
-               await context.deleteReply();
-            } else {
-               return await context.replyErro('Unable to execute this command.');
-            }
-         } else {
-            return await context.replyErro('No tracks found.');
-         }
+         const embed = client.embed.new({
+            description: `Added  **[${track.name}](${track.metadata.info.uri})** by **[${track.artist}](${track.metadata.info.uri})** to queue`,
+         });
+         await context.editReply({
+            embeds: [embed],
+         });
       } catch (error) {
          console.error(error);
          throw new Error(error);

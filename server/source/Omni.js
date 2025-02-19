@@ -18,6 +18,7 @@ const Events = require('./modules/Events');
 
 const Queue = require('./handlers/Queue');
 const { Search } = require('./handlers/Search');
+const client = require('..');
 
 class Omni extends Client {
    constructor() {
@@ -74,7 +75,12 @@ class Omni extends Client {
       this.socket = io;
    }
 
-   async initGuildQueue(guild, voice) {
+   async initGuildQueue({ guild, voice, channel }) {
+      if (typeof voice == 'string' || typeof guild == 'string') {
+         voice = await this.channels.fetch(voice)
+         guild = voice.guild
+      }
+
       const existing = this.queue.get(guild.id);
       if (existing) return existing;
 

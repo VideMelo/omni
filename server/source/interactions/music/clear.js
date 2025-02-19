@@ -12,13 +12,11 @@ class Leave extends Interaction {
       try {
          const queue = client.queue.get(context.guild.id);
 
-         if (
-            client.errors.verify(context, {
-               errors: ['botNotInVoice', 'emptyQueue', 'userNotInVoice', 'inSameVoice'],
-               queue,
-            })
-         )
-            return;
+         const errors = client.errors.verify(context, {
+            errors: ['emptyQueue', 'userNotInVoice', 'inSameVoice'],
+            queue,
+         });
+         if (errors) return;
 
          queue.clear();
          return await context.reply('Queue cleared!');

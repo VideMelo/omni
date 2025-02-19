@@ -12,20 +12,16 @@ class Resume extends Interaction {
       try {
          const queue = client.queue.get(context.guild.id);
 
-         if (
-            client.errors.verify(context, {
-               errors: ['userNotInVoice', 'inSameVoice', 'emptyQueue'],
-               queue,
-            })
-         )
-            return;
+         const errors = client.errors.verify(context, {
+            errors: ['emptyQueue', 'userNotInVoice', 'inSameVoice'],
+            queue,
+         });
+         if (errors) return;
 
-         if (!queue.tracks.size) return await context.replyErro('there is nothing to resume.');
-         if (queue.state == 'playing')
-            return await context.replyErro('the queue is already playing!');
-         if (queue.state != 'paused') return await context.replyErro('the queue is not paused!');
+         if (queue.playing)
+            return await context.replyErro('The queue is already playing!');
 
-         queue.resume();
+         queue.unpause();
          context.noReply();
       } catch (error) {
          console.error(error);

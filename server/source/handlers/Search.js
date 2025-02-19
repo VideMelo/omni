@@ -10,9 +10,9 @@ class Search {
       this.client = client;
    }
 
-   async list(query, options = { type: 'searchTrack' }) {
+   async list(query, options = { type: 'searchTrack', limit: 5 }) {
       if (options.type == 'searchTrack') {
-         const result = await this.spotify.search(query, { types: ['track'], limit: 5 })
+         const result = await this.spotify.search(query, { types: ['track'], limit: options.limit })
          return {
             type: 'search',
             items: result.body.tracks.items.map((track) => {
@@ -21,12 +21,12 @@ class Search {
                   id: track.id,
                   name: track.name,
                   artist: track.artists[0].name,
-                  album: track.album.name, 
+                  album: track.album.name,
                   duration: track.duration_ms,
                   thumbnail: track.album.images[0].url,
                   popularity: track.popularity, 
                };
-            }).sort((a, b) => b.popularity - a.popularity)
+            })
          }
       } else if (options.type == 'topResult') {
          return await this.topResults(query);

@@ -23,18 +23,19 @@ class Queue extends EventEmitter {
       this.volume = 0.5;
    }
 
-   socket(action = 'syncPlayer') {
-      return this.client.socket.to(this.guild.id).emit(action);
+   socket(action = 'updatePlayer', destination = this.guild.id) {
+      return this.client.socket.to(destination).emit(action);
    }
 
    async connect(voice) {
+      if (!voice) return;
       try {
-         this.voice = voice;
          this.player = await this.client.manager.joinVoiceChannel({
-            channelId: this.voice.id,
+            channelId: voice.id,
             guildId: this.guild.id,
             shardId: 0,
          });
+         this.voice = voice;
 
          this.player
             .on('start', (data) => {
@@ -42,7 +43,6 @@ class Queue extends EventEmitter {
                this.emit('nowPlaying', this, this.current);
                this.socket();
             })
-            .on('closed', (data) => this.disconnect())
             .on('stuck', (data) => {
                console.log('stuck', data);
             })
@@ -87,7 +87,13 @@ class Queue extends EventEmitter {
 
       this.emit('disconnect');
       this.socket();
+
       this.removeAllListeners();
+   }
+
+   move(voice) {
+      this.voice = voice;
+      this.socket();
    }
 
    async play(track, metadata) {
@@ -95,8 +101,6 @@ class Queue extends EventEmitter {
          if (!track?.id || !this.player) return;
          this.new(track);
          track = this.tracks.get(track.id);
-
-         if (metadata?.channel) this.channel = metadata.channel;
 
          if (!track?.metadata?.info?.identifier) {
             const node = this.client.manager.getIdealNode();
@@ -116,7 +120,12 @@ class Queue extends EventEmitter {
          }
          if (track?.metadata?.encoded) {
             this.current = track;
-            await this.player.playTrack({ track: { encoded: track?.metadata?.encoded } }).catch((err) => this.client.logger.error(`Error to playing track ${track.name}:`, err))
+            await this.player
+               .playTrack({ track: { encoded: track?.metadata?.encoded } })
+               .catch((err) =>
+                  this.client.logger.error(`Error to playing track ${track.name}:`, err)
+               );
+            return track;
          }
       } catch (erro) {
          console.error(erro);
