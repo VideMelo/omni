@@ -3,7 +3,7 @@ const sockets = new Map();
 module.exports = (io) => {
    io.on('connection', (socket) => {
       const client = require('../../..');
-      socket.on('set-user', (user) => {
+      socket.on('setUser', (user) => {
          socket.user = user;
          socket.join(user);
 

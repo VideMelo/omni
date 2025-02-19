@@ -71,7 +71,7 @@ module.exports = (io) => {
                socket.leave(socket?.guild);
                socket.voice = undefined;
                socket.guild = undefined;
-               if (typeof callback == 'function') callback();
+               if (typeof callback == 'function') callback(); 
                return socket.emit('status', {
                   type: 'warn',
                   message: `I'm in another voice channel, on the server you're on, join to listen to music!`,

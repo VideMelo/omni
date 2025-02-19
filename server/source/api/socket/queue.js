@@ -1,11 +1,11 @@
 const RATE_LIMIT_TIME = 15000;
 const MAX_REQUESTS_DEFAULT = 5;
 const MAX_REQUESTS_CUSTOM = {
-   play: 3,
+   play: 2,
    next: 3,
    previous: 3,
 };
-const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'set-user', 'syncVoiceChannel', 'search'];
+const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'setUser', 'syncVoiceChannel', 'search'];
 
 const requests = new Map();
 
@@ -103,6 +103,13 @@ module.exports = (io) => {
          }
 
          const voice = queue?.voice;
+         if (!voice) {
+            const data = {
+               error: { status: 403, message: 'queueNotInitied' },
+            };
+            socket.emit('status', { type: 'error', ...data.error });
+            return data;
+         }
 
          const requester = voice.members.get(socket.user);
          if (!requester) {

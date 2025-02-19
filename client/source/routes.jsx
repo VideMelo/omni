@@ -27,7 +27,7 @@ const Routers = () => {
                },
             })
             .then((res) => {
-               socket.emit('set-user', res.data.id)
+               socket.emit('setUser', res.data.id)
                console.log(res.data)
                setIsAuth(true)
             })
