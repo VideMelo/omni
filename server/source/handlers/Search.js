@@ -1,4 +1,5 @@
 const Spotify = require('./Spotify');
+const YouTube = require('./Youtube');
 
 class Search {
    constructor(client) {
@@ -7,14 +8,21 @@ class Search {
          secret: client.config.spotify.secret,
       });
 
+      this.youtube = new YouTube();
       this.client = client;
    }
 
-   async list(query, options = { type: 'searchTrack', limit: 5 }) {
+   async list(query, options = { limit: 5 }) {
+      if (!options?.type) options.type = this.idealQueryType(query);
+      if (options.type == 'invalidQuery') return null;
+
       if (options.type == 'searchTrack') {
-         const result = await this.spotify.search(query, { types: ['track'], limit: options.limit })
+         const result = await this.spotify.get(query, {
+            types: ['track'],
+            limit: options.limit,
+         });
          return {
-            type: 'search',
+            type: 'track',
             items: result.body.tracks.items.map((track) => {
                return {
                   type: 'track',
@@ -23,32 +31,52 @@ class Search {
                   artist: track.artists[0].name,
                   album: track.album.name,
                   duration: track.duration_ms,
-                  thumbnail: track.album.images[0].url,
-                  popularity: track.popularity, 
+                  thumbnail: track.album.images[0]?.url,
+                  popularity: track.popularity,
                };
-            })
-         }
+            }),
+         };
       } else if (options.type == 'topResult') {
-         return await this.topResults(query);
+         const result = await this.topResults(query);
+         return {
+            type: 'topResults',
+            items: result,
+         };
+      } else if (options.type == 'searchUrl') {
+         const info = this.infoUrl(query);
+         const result = await this[info.stream].get(query);
+         return result;
       }
+   }
+
+   idealQueryType(query) {
+      if (typeof query != 'string') return 'invalidQuery';
+      if (this.isUrl(query)) {
+         const info = this.infoUrl(query);
+         if (info.stream == 'spotify') return 'searchUrl';
+         else if (info.stream == 'youtube') return 'searchUrl';
+         else return 'invalidQuery';
+      } else return 'searchTrack';
    }
 
    async topResults(query) {
       const [artists, albums, tracks] = await this.spotify
-         .search(query, { types: ['artist', 'album', 'track'], limit: 15 })
+         .get(query, { types: ['artist', 'album', 'track'], limit: 15 })
          .then(async (res) => {
-            const tracks = res.body.tracks.items.map((track) => {
-               return {
-                  type: 'track',
-                  id: track.id,
-                  name: track.name,
-                  artist: track.artists[0].name,
-                  album: track.album.name,
-                  duration: track.duration_ms,
-                  thumbnail: track.album.images[0].url,
-                  popularity: track.popularity,
-               };
-            }).sort((a, b) => b.popularity - a.popularity);
+            const tracks = res.body.tracks.items
+               .map((track) => {
+                  return {
+                     type: 'track',
+                     id: track.id,
+                     name: track.name,
+                     artist: track.artists[0].name,
+                     album: track.album.name,
+                     duration: track.duration_ms,
+                     thumbnail: track.album.images[0].url,
+                     popularity: track.popularity,
+                  };
+               })
+               .sort((a, b) => b.popularity - a.popularity);
 
             const albums = await Promise.all(
                res.body.albums.items
@@ -69,35 +97,34 @@ class Search {
                         id: album.id,
                         name: album.name,
                         artist: album.artists[0].name,
-                        tracks: album.tracks.items.map((track) => { 
+                        tracks: album.tracks.map((track) => {
                            return {
                               type: 'track',
                               id: track.id,
                               name: track.name,
-                              artist: track.artists[0].name,
+                              artist: track.artist,
                               album: album.name,
                               duration: track.duration_ms,
-                              thumbnail: album.images[0].url,
+                              thumbnail: track.thumbnail,
                               popularity: track.popularity,
                            };
                         }),
-                        thumbnail: album.images[0].url,
+                        thumbnail: album.thumbnail,
                         popularity: album.popularity,
                      };
                   })
             );
 
-            const artists = res.body.artists.items
-               .map((artist) => {
-                  return {
-                     type: 'artist',
-                     id: artist.id,
-                     name: artist.name,
-                     thumbnail: artist?.images[0]?.url,
-                     popularity: artist.popularity,
-                  };
-               })
-            
+            const artists = res.body.artists.items.map((artist) => {
+               return {
+                  type: 'artist',
+                  id: artist.id,
+                  name: artist.name,
+                  thumbnail: artist?.images[0]?.url,
+                  popularity: artist.popularity,
+               };
+            });
+
             return [artists, albums, tracks];
          });
 
@@ -108,11 +135,11 @@ class Search {
       };
       let mathes = [];
       let result = [tracks[0], albums[0], artists[0]]
-         .map((item) => {
-            if (item.name.toLowerCase().includes(query.toLowerCase())) mathes.push(item); 
-            return item;
-         })
-      
+      result = result.map((item) => {
+         if (item?.name.toLowerCase().includes(query.toLowerCase())) mathes.push(item);
+         return item;
+      });
+
       if (mathes.length > 1) {
          result = mathes.sort(
             (a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]
@@ -120,16 +147,17 @@ class Search {
       } else if (mathes.length == 1) {
          result = mathes;
       } else {
-         result = result.sort((a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]);
+         result = result.sort(
+            (a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]
+         );
       }
-      
+
       return {
-         type: 'search',
          tracks: tracks,
          albums: albums,
          artists: artists,
-         top: {...result[0]}, 
-      }
+         top: { ...result[0] },
+      };
    }
 
    async getUrl(track) {
@@ -173,6 +201,4 @@ class Search {
    }
 }
 
-module.exports = {
-   Search,
-};
+module.exports = Search;

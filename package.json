@@ -15,7 +15,7 @@
       "discord",
       "music-bot",
       "discord-bot"
-   ],
+   ], 
    "license": "MIT",
    "workspaces": [
       "client",

@@ -36,17 +36,20 @@ class Play extends Interaction {
          }
 
          const focused = interaction.options.getFocused();
-         if (!focused) return await interaction.respond([]);
+         if (!focused || client.search.isUrl(focused)) return await interaction.respond([]);
 
          const search = await client.search.list(focused);
+         if (!search) return await interaction.respond([{ name: focused, value: focused }]);
          const tracks = search.items.map((track) => {
             const { artist, name } = track;
             const item =
                `${name} - ${artist}`.length > 100
                   ? `${name.slice(0, 100 - artist.length - 6)}... - ${artist}`
                   : `${name} - ${artist}`;
-            return { name: item, value: item };
+            return { name: item, value: search.type != 'track' ? focused : item };
          });
+
+         console.log(tracks);
 
          await interaction.respond(tracks);
       } catch (error) {
@@ -74,10 +77,14 @@ class Play extends Interaction {
             voice: context.member.voice.channel,
             channel: context.channel,
          });
+
          const track = await queue.play(search.items[0]);
+         console.log(track);
+
+         if (!track?.name) return await context.deleteReply();
 
          const embed = client.embed.new({
-            description: `Added  **[${track.name}](${track.metadata.info.uri})** by **[${track.artist}](${track.metadata.info.uri})** to queue`,
+            description: `Added  **[${track.name}](${track.metadata.url})** by **[${track.artist}](${track.metadata.url})** to queue`,
          });
          await context.editReply({
             embeds: [embed],

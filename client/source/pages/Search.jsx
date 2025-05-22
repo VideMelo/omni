@@ -22,11 +22,12 @@ export default function Page() {
       setLoading(true);
       if (query) {
          socket.emit('search', query, (result) => {
-            setTracks(result.tracks);
-            setAlbums(result.albums);
-            setArtists(result.artists);
+            console.log(result)
+            setTracks(result.items.tracks);
+            setAlbums(result.items.albums);
+            setArtists(result.items.artists);
 
-            setTop(result.top);
+            setTop(result.items.top);
             setLoading(false);
          });
       } else navigate('/')

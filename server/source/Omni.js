@@ -4,9 +4,6 @@ const fs = require('node:fs');
 
 const { GatewayIntentBits, Client, Collection } = require('discord.js');
 const intents = GatewayIntentBits;
-const { Shoukaku, Connectors } = require('shoukaku');
-
-const { server, io } = require('./api');
 
 const Button = require('./utils/button');
 const Embed = require('./utils/embed');
@@ -17,8 +14,11 @@ const Interactions = require('./modules/Interactions');
 const Events = require('./modules/Events');
 
 const Queue = require('./handlers/Queue');
-const { Search } = require('./handlers/Search');
-const client = require('..');
+const Search = require('./handlers/Search');
+
+const {Rainlink, Library } = require('rainlink')
+
+const { server, io } = require('./api');
 
 class Omni extends Client {
    constructor() {
@@ -47,38 +47,34 @@ class Omni extends Client {
       this.embed = new Embed(this);
       this.errors = new Errors(this);
 
-      this.search = new Search(this);
       this.queue = new Collection();
 
       this.interactions = new Interactions(this);
       this.events = new Events(this);
 
-      this.nodes = JSON.parse(fs.readFileSync('./source/lavalink/nodes.json')).map((node) => ({
-         name: node.Name,
-         url: `${node.Host}:${node.Port}`,
-         auth: node.Password,
-         secure: node.Secure,
-      }));
-
-      this.manager = new Shoukaku(new Connectors.DiscordJS(this), this.nodes)
-         .on('ready', (name, url, ls, sl) => this.logger.done(`Lavalink Node Connected: ${name}`))
-         .on('reconnecting', (name, left, timeout) =>
-            this.logger.async(
-               `Lavalink Node [${name}] is reconnecting. Tries Left: ${left} | Timeout: ${timeout}s`
-            )
-         )
-         .on('disconnect', (name, moved) =>
-            this.logger.warn(`Lavalink Node: [${name}] is disconnected. Moved: [${moved}]`)
-         )
-         .on('error', (name, error) => this.logger.error(`Lavalink Node: ${name} threw an error.`));
-
       this.socket = io;
+
+      this.search = new Search(this);
+
+      this.rainlink = new Rainlink({
+         library: new Library.DiscordJS(this),
+         nodes: [
+            {
+               name: 'MuzyKant SSl',
+               host: 'lavalink_v4.muzykant.xyz',
+               port: 433,
+               auth: 'https://discord.gg/v6sdrD9kPh',
+               secure: true,
+            },
+         ],
+      });
    }
 
    async initGuildQueue({ guild, voice, channel }) {
+      if (!voice) return;
       if (typeof voice == 'string' || typeof guild == 'string') {
-         voice = await this.channels.fetch(voice)
-         guild = voice.guild
+         voice = await this.channels.fetch(voice);
+         guild = voice.guild;
       }
 
       const existing = this.queue.get(guild.id);

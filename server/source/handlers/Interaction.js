@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 
 class Interaction extends SlashCommandBuilder {
    constructor(client, { name = '', description = '', exemple = '', usage = '', direct = false }) {
@@ -7,7 +7,6 @@ class Interaction extends SlashCommandBuilder {
 
       this.setName(name);
       this.setDescription(description);
-      this.setDMPermission(direct);
 
       this.help = { exemple, usage };
 

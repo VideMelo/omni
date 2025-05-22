@@ -67,7 +67,7 @@ class Buttons {
 
             const buttons = [first, previous, number, next, last];
             const row = this.row(buttons);
- 
+
             await interaction.reply({
                [type]: type === 'embeds' ? [pages[page]] : pages[page],
                components: pages.length > 1 ? [row] : [],
@@ -79,7 +79,6 @@ class Buttons {
                componentType: Discord.ComponentType.Button,
                time: 30000,
             });
-
 
             collector.on('collect', async (collect) => {
                if (!collect.isButton()) return;
@@ -151,7 +150,7 @@ class Buttons {
             });
          }
       } catch (error) {
-         console.error(error)
+         console.error(error);
          throw new Error(error);
       }
    }

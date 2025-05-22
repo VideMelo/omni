@@ -1,7 +1,7 @@
 const RATE_LIMIT_TIME = 15000;
-const MAX_REQUESTS_DEFAULT = 5;
+const MAX_REQUESTS_DEFAULT = 20;
 const MAX_REQUESTS_CUSTOM = {
-   play: 2,
+   play: 3,
    next: 3,
    previous: 3,
 };
@@ -14,7 +14,7 @@ module.exports = (io) => {
       if (!requests.has(socket.id)) {
          socket.warns = 0;
          requests.set(socket.id, {});
-      }
+      } 
       next();
    });
    io.on('connection', (socket) => {
@@ -30,31 +30,10 @@ module.exports = (io) => {
          if (socket.warns >= 25) {
             socket.emit('status', {
                type: 'error',
-               message: `User blocked!`,
+               message: `You have been blocked for a while, try again later.`,
             });
 
             return client.logger.error(`User warned: [${socket.user}]`);
-         } else if (socket.warns == 24) {
-            socket.emit('status', {
-               type: 'error',
-               message: `Okay, I only have one option left.`,
-            });
-
-            client.logger.error(`User warned: [${socket.user}]`);
-         } else if (socket.warns == 23) {
-            socket.emit('status', {
-               type: 'error',
-               message: `Damn bro, are you sure about that?`,
-            });
-
-            client.logger.error(`User warned: [${socket.user}]`);
-         } else if (socket.warns >= 20) {
-            socket.emit('status', {
-               type: 'error',
-               message: `If you keep this up, you will be blocked!`,
-            });
-
-            client.logger.error(`User warned: [${socket.user}]`);
          }
 
          const now = Date.now();
@@ -71,11 +50,10 @@ module.exports = (io) => {
 
          if (data[event].count > maxRequests) {
             client.logger.error(`Event rate limit: [${event}], user: ${socket.user}`);
-            if (socket.warns < 20)
-               socket.emit('status', {
-                  type: 'error',
-                  message: `You are making requests too quickly; please wait a moment before making the next one!!`,
-               });
+            socket.emit('status', {
+               type: 'error',
+               message: `You are making requests too quickly; please wait a moment before making the next one!!`,
+            });
             socket.warns++;
             return;
          }
@@ -161,7 +139,7 @@ module.exports = (io) => {
                },
                shuffle: queue.shuffle,
                repeat: queue.repeat,
-               position: queue?.player?.position | 0,
+               position: queue.getPosition() | 0,
                playing: queue.playing,
             });
       });
@@ -173,14 +151,14 @@ module.exports = (io) => {
 
       socket.on('play', async (track, callback) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          data.queue.play(track, { requester: socket.user });
       });
 
       socket.on('newTrack', async (track, callback) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
          track = {
             ...track,
             resquester: socket.user | 0,
@@ -196,14 +174,14 @@ module.exports = (io) => {
 
       socket.on('skipTo', async (index) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          data.queue.play(data.queue.skip(index), { state: 'update', emit: true });
       });
 
       socket.on('pause', async () => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          if (!data.queue.playing) return;
          data.queue.pause();
@@ -211,7 +189,7 @@ module.exports = (io) => {
 
       socket.on('resume', async () => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          if (data.queue.playing) return;
          data.queue.unpause();
@@ -219,27 +197,27 @@ module.exports = (io) => {
 
       socket.on('next', async () => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          data.queue.play(data.queue.next(true));
       });
 
       socket.on('previous', async () => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
          data.queue.play(data.queue.previous(true), { state: 'update', emit: true });
       });
 
       socket.on('repeat', async (value) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          data.queue.setRepeat(value);
       });
 
       socket.on('shuffle', async (value) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          if (value) {
             data.queue.shuffle();
@@ -250,14 +228,14 @@ module.exports = (io) => {
 
       socket.on('volume', async (value) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          data.queue.volume(value);
       });
 
       socket.on('seek', async (value) => {
          const data = await validate();
-         if (data.error) return;
+         if (data?.error || !data) return;
 
          data.queue.seek(value);
          client.socket.to(socket.guild).emit('seek', value);

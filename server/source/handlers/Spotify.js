@@ -1,5 +1,4 @@
 const SpotifyWebApi = require('spotify-web-api-node');
-
 const Logger = require('../utils/logger');
 
 class Spotify {
@@ -15,115 +14,150 @@ class Spotify {
          .then((data) => {
             this.expiration = new Date().getTime() / 1000 + data.body['expires_in'];
             this.api.setAccessToken(data.body['access_token']);
+            console.log(data.body['access_token']);
          })
          .catch((err) => {
-            Logger.error('Something went wrong when retrieving an access token', err);
+            console.error('Something went wrong when retrieving an access token', err);
          });
 
       this.urls = {
-         pattern: /https?:\/\/open\.spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]{22})/,
+         pattern:
+            /https?:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(track|album|playlist)\/([a-zA-Z0-9]{22})/,
       };
    }
 
    async refreshAccessToken() {
       const data = await this.api.clientCredentialsGrant();
-
       this.api.setAccessToken(data.body['access_token']);
       this.expiration = new Date().getTime() / 1000 + data.body['expires_in'];
-
       return data.body['access_token'];
    }
 
-   async search(query, options = { types: ['track'], ...options }) {
+   async requestWithRetry(apiCall, retries = 5) {
+      for (let i = 0; i < retries; i++) {
+         try {
+            return await apiCall();
+         } catch (err) {
+            if (err.statusCode === 429) {
+               const retryAfter = parseInt(err.headers?.['retry-after'], 10) || 5;
+               console.warn(`Rate limit atingido. Tentando novamente em ${retryAfter} segundos...`);
+               await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+            } else {
+               throw err;
+            }
+         }
+      }
+      throw new Error('Número máximo de tentativas atingido.');
+   }
+
+   async get(query, options = { types: ['track'] }) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
+
       if (this.urls.pattern.test(query)) {
          const match = this.urls.pattern.exec(query);
-
          const type = match[1];
          const id = match[2];
 
+         let result;
          switch (type) {
             case 'track':
-               return await this.getTrack(id);
+               result = await this.getTrack(id);
+               break;
             case 'album':
-               return await this.getAlbum(id);
+               result = await this.getAlbum(id);
+               break;
             case 'playlist':
-               return await this.getPlaylist(id, {
-                  page: options?.page,
-               });
+               result = await this.getPlaylist(id, { page: options?.page });
+               break;
          }
+
+         return {
+            type,
+            items: [result],
+         };
       } else {
-         const results = await this.api.search(query, options.types, options);
-         return results;
+         return await this.requestWithRetry(() => this.api.search(query, options.types, options));
       }
    }
 
    async getList(query, results = 5, options) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-      const search = await this.api.searchTracks(query, {
-         limit: results,
-         ...options,
-      });
 
-      if (search.body.tracks.total == 0) return;
+      const search = await this.requestWithRetry(() =>
+         this.api.searchTracks(query, { limit: results, ...options })
+      );
+
+      if (search.body.tracks.total === 0) return;
       return {
          type: 'search',
-         tracks: search.body.tracks.items.map((track) => {
-            return new Track(this.build(track));
-         }),
+         tracks: search.body.tracks.items.map((track) => new Track(this.build(track))),
       };
    }
 
-   async getPlaylist(id, { ...options }) {
+   async getPlaylist(id) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-      const playlist = await this.api.getPlaylist(id).then((playlist) => playlist.body);
 
-      const page = options?.page || 1;
-      const offset = (page - 1) * 100 || 0;
+      let playlist
+      try {
+         const playlist = await this.requestWithRetry(() =>
+         this.api.getPlaylist(id).then((playlist) => playlist.body)
+      );
+      } catch (err) {
+         console.error('não foi possivel buscar', id, err)
+      }
 
-      const tracks =
-         page === 1
-            ? playlist.tracks
-            : await this.api.getPlaylistTracks(id, { offset }).then((tracks) => tracks.body);
+      if (playlist.tracks.total === 0) return;
 
-      if (playlist.tracks.total == 0) return;
-      if (offset > playlist.tracks.total) return;
+      let allItems = [...playlist.tracks.items];
+      const totalTracks = playlist.tracks.total;
 
+      if (totalTracks > 100) {
+         for (let offset = 100; offset < totalTracks; offset += 100) {
+            const tracksPage = await this.requestWithRetry(() =>
+               this.api.getPlaylistTracks(id, { offset, limit: 100 }).then((res) => res.body.items)
+            ).catch((error) => {
+               Logger.error('Erro ao buscar faixas:', error);
+               return [];
+            });
+
+            allItems.push(...tracksPage);
+         }
+      }
       return {
-         type: 'list',
+         type: 'playlist',
          id: playlist.id,
          name: playlist.name,
-         authors: playlist.owner.display_name,
-         thumbnail: playlist.images[0].url,
+         artist: playlist.owner.display_name,
+         thumbnail: playlist.images[0]?.url,
          url: playlist.external_urls.spotify,
-         total: playlist.tracks.total,
-         tracks: tracks.items.map((track) => new Track(this.build(track.track))),
-         page,
+         total: totalTracks,
+         tracks: allItems.map((item) => this.build(item.track)),
       };
    }
 
    async getTrack(id) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-      const track = await this.api.searchTracks(id, { limit: 1, offset: 1 });
+      const track = await this.requestWithRetry(() =>
+         this.api.searchTracks(id, { limit: 1, offset: 1 })
+      );
       return new Track(track.body.tracks.items[0]);
    }
 
    async getAlbum(id) {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-      const album = await this.api.getAlbum(id).then((album) => album.body);
+      const album = await this.requestWithRetry(() =>
+         this.api.getAlbum(id).then((album) => album.body)
+      );
 
-      return album;
       return {
          type: 'list',
          id: album.id,
          name: album.name,
-         authors: album.artists,
+         artists: album.artists,
          thumbnail: album.images[0].url,
          url: album.external_urls.spotify,
          total: album.tracks.total,
-         tracks: album.tracks.items.map(
-            (track) => new Track(this.build({ ...track, album: album }))
-         ),
+         tracks: album.tracks.items.map((track) => this.build({ ...track, album })),
       };
    }
 
@@ -133,12 +167,7 @@ class Spotify {
          id: track.id,
          source: 'spotify',
          name: track.name,
-         authors: track.artists.map((artist) => {
-            return {
-               name: artist.name,
-               id: artist.id,
-            };
-         }),
+         artist: track.artists[0].name,
          duration: track.duration_ms,
          thumbnail: track?.album?.images[0]?.url,
          query: `${track.artists[0].name} - ${track.name} Auto-generated by YouTube.`,

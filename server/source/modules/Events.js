@@ -45,14 +45,14 @@ class Events {
                      this.client.PlayerEvents.push({
                         name: event.name,
                         handler,
-                     });
+                     }); 
 
                      // Aplicar o evento a todas as queue existentes
                      this.client.queue.forEach((queue) => {
                         queue.on(event.name, handler);
                      });
                   }
-                  length++;
+                  length++; 
                } catch (error) {
                   this.client.logger.error(`${file} failed: ${error}`);
                }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import axios from 'axios';
+
 import Slider from './Slider';
 import Vibrant from 'node-vibrant';
 
@@ -25,6 +27,7 @@ function Player({ metadata, setMetadata }) {
 
    const [queue, setQueue] = useState([])
    const [track, setTrack] = useState(null);
+   const [cover, setCover] = useState(null);
 
    const [palette, setPalette] = useState(null);
    const [timer, setTimer] = useState(0)
@@ -43,13 +46,18 @@ function Player({ metadata, setMetadata }) {
             }
             return prev + 1;
          });
-      }, 1000);
+      }, 900);
       return () => clearInterval(interval);
    }, [playing, track, timer]);
 
    useEffect(() => {
       setMetadata({ queue, player, palette, track, timer })
    }, [queue, player, palette, track, timer])
+
+   useEffect(() => {
+      if (!track) return
+      fetchTrackCover(track)
+   }, [track])
 
    useEffect(() => {
       socket.emit('syncVoiceChannel', updatePlayer)
@@ -69,6 +77,7 @@ function Player({ metadata, setMetadata }) {
    function setInitialState() {
       setQueue([])
       setTrack(null)
+      setCover(null)
       setPlayer(null)
       setPlaying(false)
       setTimer(0)
@@ -79,7 +88,8 @@ function Player({ metadata, setMetadata }) {
       socket.emit('getQueue', (data) => {
          if (!data) return setInitialState()
          setQueue(data.list)
-         setTrack({ ...data.current, duration: data.current?.duration - 2500 | 0 })
+         setTrack({ ...data.current, duration: data.current?.duration | 0 })
+         setCover(data.current?.thumbnail)
          handlePalette(data.current?.thumbnail)
          console.log(data)
       })
@@ -92,6 +102,32 @@ function Player({ metadata, setMetadata }) {
          console.log(data)
       })
 
+   }
+
+   async function fetchTrackCover(track) {
+      try {
+         const response = await axios.get('https://ws.audioscrobbler.com/2.0/', {
+            params: {
+               method: 'album.search',
+               album: `${track.album} ${track.artist}`,
+               api_key: 'ce49f501a7fc72f53ad8a9b0e3bfd86c',
+               format: 'json'
+            }
+         });
+
+         const albums = response.data.results.albummatches.album;
+         if (albums.length > 0) {
+            const image = albums[0]?.image[3]['#text'];
+            const fetch = await axios.head(image);
+            const contentType = fetch.headers['content-type'];
+
+            if (contentType === 'image/gif') setCover(image);
+
+         }
+      } catch (error) {
+         console.error('Error fetching album:', error.message);
+
+      }
    }
 
    function handlePalette(image) {
@@ -131,11 +167,11 @@ function Player({ metadata, setMetadata }) {
 
    if (!track || !palette || !player) return null;
    return (
-      <div className="flex min-w-[400px] max-w-[400px] flex-col gap-3 h-full">
+      <div className={`flex min-w-[400px] max-w-[400px] flex-col gap-3 h-full`}>
          <div className={`relative overflow-auto scrollbar-none h-full flex-col items-center flex rounded-3xl`} style={{ backgroundColor: palette.alpha }}>
             <div className={`relative w-[400px] h-[400px] duration-700 transi ease-out delay-75 ${location.pathname == '/queue' ? '-mt-[730px]' : ''}`}>
                <img
-                  src={track.thumbnail}
+                  src={cover}
                   className="w-full h-full object-cover rounded-t-3xl"
                />
                <div className="absolute" style={{
@@ -143,8 +179,8 @@ function Player({ metadata, setMetadata }) {
                   backgroundImage: `linear-gradient(to bottom, transparent 35%, ${palette.alpha} 100%)`
                }}></div>
             </div>
-            <div className="flex flex-col w-full gap-5 px-6 z-[1] -mt-[25px]">
-               <div className="flex flex-col gap-3">
+            <div className={`flex flex-col w-full gap-5 px-6 z-[1] -mt-[25px] ${!track?.initied ? 'cursor-wait' : ''}`}>
+               <div className={`flex flex-col gap-3 ${!track?.initied ? 'animate-pulse pointer-events-none' : ''}`}>
                   <div className="flex w-full px-1 items-center justify-between">
                      <div className='w-[85%]'>
                         <div className="font-semibold text-lg font-poppins truncate">{track.name}</div>
@@ -158,7 +194,7 @@ function Player({ metadata, setMetadata }) {
                   </div>
                   <Slider value={timer} duration={track.duration / 1000} onChange={(value) => { setTimer(value.time) }} onCommit={(value) => { setTimer(value.time) }} />
                </div>
-               <div className="flex w-full justify-center gap-10 items-center">
+               <div className={`flex w-full justify-center gap-10 items-center ${!track?.initied ? 'animate-pulse pointer-events-none' : ''}`}>
                   <button onClick={() => socket.emit('previous',)}>
                      <Previous className="w-[50px] h-[50px] fill-white" />
                   </button>
