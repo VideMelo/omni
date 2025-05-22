@@ -128,7 +128,7 @@ function Player({ metadata, setMetadata }) {
          console.error('Error fetching album:', error.message);
 
       }
-   }
+   } 
 
    function handlePalette(image) {
       if (!image) return

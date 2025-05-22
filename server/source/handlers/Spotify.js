@@ -99,7 +99,7 @@ class Spotify {
 
       let playlist
       try {
-         const playlist = await this.requestWithRetry(() =>
+         playlist = await this.requestWithRetry(() =>
          this.api.getPlaylist(id).then((playlist) => playlist.body)
       );
       } catch (err) {
