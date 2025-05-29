@@ -76,7 +76,6 @@ class Search {
                      popularity: track.popularity,
                   };
                })
-               .sort((a, b) => b.popularity - a.popularity);
 
             const albums = await Promise.all(
                res.body.albums.items
