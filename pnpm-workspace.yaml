@@ -1,0 +1,8 @@
+packages:
+  - 'packages/*'
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - '@discordjs/opus'
+  - ffmpeg-static
+  - youtube-dl-exec
+

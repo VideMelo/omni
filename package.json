@@ -2,30 +2,31 @@
    "name": "omni",
    "description": "A Discord Music Bot",
    "version": "1.0.0",
-   "scripts": {
-      "dev": "concurrently \"yarn workspace server dev\" \"yarn workspace client dev\"",
-      "start:server": "yarn workspace server start",
-      "start:client": "yarn workspace client start"
-   },
-   "main": "index.js",
-   "type": "commonjs",
+   "main": "index.ts",
    "author": "VideMelo",
-   "repository": "https://github.com/videMelo/omni",
+   "repository": "https://github.com/VideMelo/omni",
    "keywords": [
       "discord",
       "music-bot",
       "discord-bot"
-   ], 
+   ],
    "license": "MIT",
    "workspaces": [
-      "client",
-      "server"
+      "packages/web",
+      "packages/bot"
    ],
+   "pnpm": {
+      "onlyBuiltDependencies": [
+         "youtube-dl-exec",
+         "ffmpeg-static",
+         "@discordjs/opus"
+      ]
+   },
    "private": true,
    "devDependencies": {
-      "concurrently": "^8.2.0"
+      "@types/node": "^22.15.29",
+      "turbo": "^2.5.4",
+      "typescript": "^5.8.3"
    },
-   "dependencies": {
-      "tailwind-scrollbar": "^4.0.0"
-   }
+   "packageManager": "pnpm@10.0.0"
 }

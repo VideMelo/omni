@@ -1,11 +1,7 @@
-# Node
 **/node_modules
 **.env
-
-# Logs
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Workspace
 .vscode
+.turbo
+pnpm-debug.log
+pnpm-lock.yaml

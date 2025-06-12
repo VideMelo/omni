@@ -1,0 +1,366 @@
+import Bot from '../core/Bot.js';
+import { Track } from './Media.js';
+
+import fs from 'node:fs';
+import { Stream } from 'node:stream';
+
+import * as Discord from 'discord.js';
+import * as Voice from '@discordjs/voice';
+
+import type { VoiceConnection, AudioPlayer } from '@discordjs/voice';
+
+import ffmpeg from 'ffmpeg-static';
+import fluent from 'fluent-ffmpeg';
+
+import Queue from './Queue.js';
+import logger from '../utils/logger.js';
+import { Playlist } from 'youtube-sr';
+import Search from './Search.js';
+
+interface PlayerOptions {
+   voice: string;
+   guild: string;
+   channel?: string;
+   volume?: number;
+   autoplay?: boolean;
+   autoleave?: boolean;
+}
+
+export default class Player {
+   public client: Bot;
+
+   public voice: string;
+   public guild: string;
+   public channel?: string;
+   public volume?: number;
+   public autoplay?: boolean;
+   public autoleave?: boolean;
+
+   public queue: Queue;
+
+   private connection?: VoiceConnection;
+   private audioplayer?: AudioPlayer;
+   private audioresource?: Voice.AudioResource;
+
+   public playing: boolean;
+
+   public current?: Track;
+   public metadata: any;
+
+   constructor(client: Bot, { guild, voice, channel, volume, autoplay, autoleave }: PlayerOptions) {
+      this.client = client;
+
+      this.guild = guild;
+      this.voice = voice;
+      this.channel = channel;
+      this.volume = volume;
+      this.autoplay = autoplay;
+      this.autoleave = autoleave;
+
+      this.playing = false;
+
+      this.queue = new Queue(guild);
+   }
+
+   public async connect(channel: string) {
+      try {
+         const voice = (await this.client.channels.fetch(channel)) as Discord.VoiceBasedChannel;
+         if (!voice) throw new Error('Invalid VoiceChannel');
+
+         this.connection = Voice.joinVoiceChannel({
+            channelId: voice.id,
+            guildId: voice.guild.id,
+            adapterCreator: voice.guild.voiceAdapterCreator,
+         });
+         this.voice = voice.id;
+
+         this.metadata = {
+            voice,
+         };
+
+         this.audioplayer = Voice.createAudioPlayer({
+            behaviors: { noSubscriber: Voice.NoSubscriberBehavior.Play },
+         });
+         this.audioplayer
+            .on(Voice.AudioPlayerStatus.Playing, (state) => {
+               this.playing = true;
+
+               console.log(
+                  `Playing track: ${this.current!.name} by ${this.current!.artist.name} (${
+                     this.current!.id
+                  })`
+               );
+            })
+            .on(Voice.AudioPlayerStatus.Idle, () => {
+               this.playing = false;
+               const next = this.queue.next(this.current!);
+               if (!next) return;
+               this.play(next);
+            })
+            .on(Voice.AudioPlayerStatus.Buffering, () => {
+               this.playing = false;
+            });
+      } catch (error: any) {
+         logger.error(error);
+      }
+   }
+
+   public disconnect() {
+      if (this.connection) this.connection.destroy();
+   }
+
+   public destroy() {}
+
+   public async play(
+      track: Track,
+      metadata: { seek?: number; builded?: boolean; force?: boolean; requester?: string } = {
+         seek: 0,
+         builded: false,
+         force: false,
+      }
+   ): Promise<Track | undefined> {
+      try {
+         if (!(track instanceof Track)) return;
+         if (!this.audioplayer || !this.connection) return;
+
+         track = metadata.builded ? track : await this.handleTrackData(track);
+         if (this.playing || this.queue.tracks.length === 0)
+            track = this.queue.new(track, metadata)!;
+         if (this.playing) if (!metadata.seek && !metadata.force) return track;
+
+         const stream = await this.getAudioStream(track, metadata);
+         if (!stream) return;
+
+         this.audioresource = Voice.createAudioResource(stream.opus, {
+            inlineVolume: true,
+            inputType: Voice.StreamType.OggOpus,
+            metadata: track,
+         });
+
+         this.audioresource.volume?.setVolume(this.volume ? this.volume / 100 : 1);
+
+         if (this.playing) this.audioplayer.stop(); // ;-;
+         this.audioplayer.play(this.audioresource);
+         this.current = track;
+
+         this.connection.subscribe(this.audioplayer);
+
+         if (!track.cached) this.archiveTrackData(track, stream.opus, stream.chunks);
+         return track;
+      } catch (erro: any) {
+         logger.error('error', erro);
+      }
+   }
+
+   async archiveTrackData(track: Track, stream: Stream.PassThrough, chunks: Buffer[]) {
+      if (!stream) return;
+      const channel = (await this.client.channels.fetch(
+         '1343313574898040862'
+      )) as Discord.TextChannel;
+      await new Promise((resolve, reject) => {
+         stream.on('end', resolve);
+         stream.on('error', reject);
+      });
+
+      const buffered = Buffer.concat(chunks);
+
+      if (!channel) throw new Error('Channel not found!');
+
+      const attachment = new Discord.AttachmentBuilder(buffered, {
+         name: `${track.id}.opus`,
+      });
+      const message = await channel.send({
+         content: `${track.name} - ${track.artist.name}`,
+         files: [attachment],
+      });
+
+      const data = {
+         id: track.id,
+         track: {
+            ...track,
+            source: 'cache',
+         },
+         message: message.id,
+      };
+
+      const file = 'tracks.json';
+      try {
+         const json = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
+         fs.writeFileSync(file, JSON.stringify([...json, data], null, 2));
+      } catch (error: any) {
+         logger.error('Erro:', error);
+      }
+   }
+
+   private async loadCachedTrack(track: Track): Promise<Track | undefined> {
+      const tracks = (() => {
+         try {
+            return JSON.parse(fs.readFileSync('tracks.json', 'utf8'));
+         } catch {
+            return [];
+         }
+      })() as { id: string; track: Track; message: string }[];
+
+      const cache = tracks.find((item) => item.id === track.id);
+      if (!cache) return;
+
+      const channel = (await this.client.channels.fetch(
+         '1343313574898040862'
+      )) as Discord.TextChannel;
+      if (!channel) return;
+
+      const message = await channel.messages.fetch(cache.message);
+      const url = message.attachments.first()?.url;
+      if (!url) return;
+      return new Track({
+         ...cache.track,
+         cached: true,
+         streamable: url,
+      });
+   }
+
+   private async getCachedStream(url: string) {
+      if (url?.includes('.opus')) {
+         const response = await fetch(url).catch((err) => {
+            logger.error('Error fetching audio:', err);
+            return undefined;
+         });
+
+         if (!response || !response.body) {
+            logger.error('No response or response body when fetching audio.');
+            return;
+         }
+
+         const reader = response.body.getReader();
+         const nodeStream = new Stream.Readable({
+            async read() {
+               const { done, value } = await reader.read();
+               if (done) this.push(null);
+               else this.push(Buffer.from(value));
+            },
+         });
+
+         return nodeStream;
+      }
+   }
+
+   private async handleTrackData(track: Track): Promise<Track> {
+      const cached = await this.loadCachedTrack(track);
+      if (cached?.source === 'spotify') cached.source = 'cache';
+      if (cached) return cached;
+
+      const query = `${track.artist.name} - ${track.name} Auto-generated by YouTube`;
+      const result = await this.client.search.youtube.search(query);
+      if (!result) throw new Error('No search results found');
+
+      return new Track({
+         ...track,
+         metadata: {
+            ...result,
+         },
+      });
+   }
+
+   private async getAudioStream(track: Track, metadata: any = { seek: 0 }) {
+      const stream = new Stream.PassThrough();
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk) => chunks.push(chunk));
+
+      if (track.cached) {
+         if (!track.streamable) {
+            stream.destroy(new Error('Track is cached but has no streamable URL.'));
+            return;
+         }
+
+         const streamable = await this.getCachedStream(track.streamable);
+         if (streamable) streamable.pipe(stream);
+         else {
+            stream.destroy(new Error('Failed to create Cache Stream.'));
+            return;
+         }
+      } else if (track.metadata?.url) {
+         const streamable = this.client.search.youtube.getStream(track.metadata.url);
+         if (streamable) streamable.pipe(stream);
+         else {
+            stream.destroy(new Error('Failed to create YouTube Stream.'));
+            return;
+         }
+      }
+
+      const opus = fluent({ source: stream })
+         .setFfmpegPath(ffmpeg as unknown as string)
+         .format('opus')
+         .seek(metadata.seek || 0)
+         .on('error', (err: any) => {
+            if (err instanceof Error && err?.message?.includes('Premature close')) return;
+            logger.error('Erro:', err);
+         });
+
+      process.once('uncaughtException', (err: any) => {
+         if (err.code === 'ERR_STREAM_PREMATURE_CLOSE') {
+            logger.warn('Stream closed prematurely (global). Ignoring.');
+            return;
+         }
+         logger.error('Uncaught Exception:', err);
+         process.exit(1);
+      });
+
+      const opusStream = new Stream.PassThrough();
+      opus.pipe(opusStream);
+
+      return { opus: opusStream, chunks };
+   }
+
+   public async seek(time: number) {
+      if (!this.current) return;
+      await this.play(this.current!, { seek: time, builded: true });
+   }
+
+   public pause() {
+      if (this.audioplayer) {
+         this.audioplayer.pause();
+      } else {
+         logger.warn('Audio player is not initialized.');
+      }
+   }
+
+   public resume() {
+      if (this.audioplayer) {
+         this.audioplayer.unpause();
+      } else {
+         logger.warn('Audio player is not initialized.');
+      }
+   }
+
+   public setVoiceChannel(id: string) {}
+   public setTextChannel(id: string) {
+      this.channel = id;
+   }
+
+   public getPosition() {
+      return this.audioresource?.playbackDuration;
+   }
+
+   public setVolume(value: number) {
+      if (value < 0 || value > 100) {
+         logger.warn('Volume must be between 0 and 100.');
+         return;
+      }
+      if (this.audioresource) {
+         const volume = this.audioresource.volume;
+         if (volume) {
+            volume.setVolume(value);
+            this.volume = value;
+         } else {
+            logger.warn('Audio resource volume is not set.');
+         }
+      }
+   }
+
+   public setAutoplay(value: boolean) {
+      this.autoplay = value;
+   }
+   public setAutoleave(value: boolean) {
+      this.autoleave = value;
+   }
+}
