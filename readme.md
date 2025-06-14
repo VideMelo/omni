@@ -20,7 +20,7 @@ Omni is a music bot for Discord that transforms the musical experience into an i
 ### Install Packages
 
 ```sh
-npm install turbo pnpm
+npm install pnpm -g
 pnpm install
 ```
 
@@ -57,5 +57,5 @@ VITE_SERVER_URL=http://localhost:8443 # Your Server Url Domain
 ### Run
 
 ```
-turbo dev
+pnpm turbo dev
 ```
