@@ -72,10 +72,10 @@ type SpotifySearchResultType = 'tracks' | 'albums' | 'playlists' | 'artists';
 interface SpotifySearchResult {
    type: SpotifySearchType | 'topResult' | 'searchResult';
    items: {
-      tracks?: SpotifyTrack[]
-      playlists?: SpotifyPlaylist[]
-      albums?: SpotifyAlbum[]
-      artists?: SpotifyArtist[]
+      tracks: SpotifyTrack[]
+      playlists: SpotifyPlaylist[]
+      albums: SpotifyAlbum[]
+      artists: SpotifyArtist[]
    };
 }
 
@@ -149,7 +149,7 @@ export default class Spotify {
          return {
             type: 'searchResult',
             items: {
-               tracks: result.body.tracks.items.map((item) => this.build(item)),
+               tracks: result.body.tracks.items.map((item) => this.build(item)) || [],
                artists: result.body.artists?.items.map((artist) => ({
                   type: 'artist',
                   id: artist.id,
@@ -159,7 +159,7 @@ export default class Spotify {
                   url: artist.external_urls?.spotify,
                   genres: artist.genres,
                   followers: artist.followers,
-               })),
+               })) || [],
                albums: result.body.albums?.items.map((album) => ({
                   type: 'album',
                   id: album.id,
@@ -169,7 +169,8 @@ export default class Spotify {
                   thumbnail: album.images[0]?.url,
                   url: album.external_urls.spotify,
                   tracks: [],
-               })),
+               })) || [],
+               playlists: []
             },
          };
       }
@@ -205,7 +206,10 @@ export default class Spotify {
       return {
          type,
          items: {
-            [type.concat('s')]: [result],
+            tracks: type === 'track' ? [result as SpotifyTrack] : [],
+            albums: type === 'album' ? [result as SpotifyAlbum] : [],
+            playlists: type === 'playlist' ? [result as SpotifyPlaylist] : [],
+            artists: [],
          },
       };
    }

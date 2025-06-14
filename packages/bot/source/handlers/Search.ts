@@ -1,4 +1,5 @@
 import Bot from '../core/Bot.js';
+import { Track } from './Media.js';
 import Spotify from './Spotify.js';
 import YouTube from './Youtube.js';
 
@@ -44,9 +45,10 @@ export default class Search {
             types: ['track'],
             limit: options.limit,
          });
+
          return {
             type: 'searchResult',
-            items: result.items,
+            items: { tracks: result.items.tracks.map((track) => new Track(track)) },
          };
       } else if (options.type == 'topResult') {
          const result = await this.spotify.getTopResults(query);

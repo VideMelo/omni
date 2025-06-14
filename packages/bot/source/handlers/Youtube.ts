@@ -1,9 +1,11 @@
-import fs from 'node:fs';
-import * as Discord from 'discord.js';
-import ytdl from 'youtube-dl-exec';
+import { ChildProcess } from 'child_process';
+
+import ytex from 'youtube-dl-exec';
 import ytsr from 'youtube-sr';
-import { title } from 'node:process';
-import { Track, TrackMetadata } from './Media.js';
+
+import ytdl from '@distube/ytdl-core';
+
+import { TrackMetadata } from './Media.js';
 
 export default class YouTube {
    urls: {
@@ -40,9 +42,66 @@ export default class YouTube {
       } as TrackMetadata;
    }
 
-   getStream(url: string) {
-      try {
-         const stream = ytdl.exec(
+   public getAudioStream(url: string): Promise<NodeJS.ReadableStream> {
+      return new Promise<NodeJS.ReadableStream>((resolve, reject) => {
+         const stream = ytdl(url, {
+            quality: 'highestaudio',
+            filter: 'audioonly',
+            highWaterMark: 1 << 25,
+         });
+
+         stream.once('error', (err) => {
+            try {
+               const fallback = this.#getAudioStream(url);
+               resolve(fallback);
+            } catch (fallbackErr) {
+               reject(fallbackErr);
+            }
+         });
+         stream.once('readable', () => resolve(stream));
+      });
+   }
+
+   #getAudioStream(url: string): NodeJS.ReadableStream {
+      const subprocess: ChildProcess = ytex.exec(
+         url,
+         {
+            output: '-',
+            format: 'bestaudio/best',
+            audioFormat: 'opus',
+            audioQuality: 0,
+            quiet: true,
+            noWarnings: true,
+            preferFreeFormats: true,
+         },
+         { stdio: ['ignore', 'pipe', 'pipe'] }
+      );
+
+      subprocess.stderr?.on('data', (chunk) => {
+         console.error(`youtube-dl stderr: ${chunk}`);
+      });
+
+      subprocess.on('close', (code) => {
+         if (code !== 0) {
+            console.error(`youtube-dl exited with code ${code}`);
+         }
+      });
+
+      subprocess.on('error', (err) => {
+         console.error('Error to execute youtube-dl:', err);
+      });
+
+      if (!subprocess.stdout) {
+         throw new Error('Error to create stdout subprocess');
+      }
+
+      return subprocess.stdout;
+   }
+
+   getAudioBuffer(url: string): Promise<Buffer> {
+      console.log('getting buffer');
+      return new Promise((resolve, reject) => {
+         const subprocess = ytex.exec(
             url,
             {
                output: '-',
@@ -51,12 +110,20 @@ export default class YouTube {
                audioQuality: 0,
                quiet: true,
             },
-            { stdio: ['ignore', 'pipe', 'ignore'] }
+            { stdio: ['ignore', 'pipe', 'pipe'] }
          );
 
-         return stream.stdout;
-      } catch (err) {
-         console.error(err);
-      }
+         const chunks: Buffer[] = [];
+         const stdout = subprocess.stdout as NodeJS.ReadableStream;
+
+         stdout.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+         stdout.on('error', reject);
+
+         subprocess.on('error', reject);
+         subprocess.on('close', (code) => {
+            if (code === 0) resolve(Buffer.concat(chunks));
+            else reject(new Error(`youtube‑dl exited with code ${code}`));
+         });
+      });
    }
 }

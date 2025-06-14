@@ -307,7 +307,7 @@ export default class Player extends EventEmitter {
             return;
          }
       } else if (track.metadata?.url) {
-         const streamable = this.client.search.youtube.getStream(track.metadata.url);
+         const streamable = await this.client.search.youtube.getAudioStream(track.metadata.url);
          if (streamable) streamable.pipe(stream);
          else {
             stream.destroy(new Error('Failed to create YouTube Stream.'));
