@@ -4,4 +4,3 @@ npm-debug.log*
 .vscode
 .turbo
 pnpm-debug.log
-pnpm-lock.yaml
