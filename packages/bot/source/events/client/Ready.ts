@@ -1,5 +1,5 @@
 import Bot from '../../core/Bot.js';
-import * as Discord from 'discord.js'
+import * as Discord from 'discord.js';
 
 import Event from '../../handlers/Event.js';
 import logger from '../../utils/logger.js';
@@ -10,7 +10,6 @@ export default class ClientReady extends Event {
    }
 
    async execute(client: Bot, event: Discord.Client) {
-
       await client.application!.commands.fetch();
 
       client.user!.setPresence({

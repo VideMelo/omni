@@ -1,6 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import logger from '../../utils/logger.js';
 import { Track } from '../../handlers/Media.js';
+import { isBooleanObject } from 'node:util/types';
+import { isBoolean } from 'node:util';
 
 const RATE_LIMIT_TIME = 15000;
 const MAX_REQUESTS_DEFAULT = 20;
@@ -78,8 +80,8 @@ module.exports = (io: Server) => {
          if (!socket?.user) return;
 
          if (!socket.guild || !socket?.voice) {
-            const error = { status: 404, message: 'userNotvoice:sync' };
-            socket.emit('status', { type: 'error', ...error });
+            const error = { status: 404, message: 'userNotInVoice' };
+            // socket.emit('status', { type: 'error', ...error });
             return { error };
          }
 
@@ -93,14 +95,14 @@ module.exports = (io: Server) => {
 
          if (voice.id !== player?.voice) {
             const error = { status: 403, message: 'playerNotInitied' };
-            socket.emit('status', { type: 'error', ...error });
+            // socket.emit('status', { type: 'error', ...error });
             return { error };
          }
 
          const requester = voice.members.get(socket.user);
          if (!requester) {
             const error = { status: 403, message: 'userNotInPlayerChannel' };
-            socket.emit('status', { type: 'warn', ...error });
+            // socket.emit('status', { type: 'warn', ...error });
             return { error };
          }
 
@@ -116,6 +118,10 @@ module.exports = (io: Server) => {
          callback?.({
             list: player.queue.tracks,
             current: player.current,
+            next: player.queue.next(),
+            repeat: player.queue.repeat,
+            shuffled: player.queue.shuffled,
+            previous: player.queue.previous(),
          });
       });
 
@@ -132,6 +138,8 @@ module.exports = (io: Server) => {
             repeat: player.queue.repeat,
             position: player.getPosition() || 0,
             playing: player.playing,
+            paused: player.paused,
+            volume: player.volume,
          });
       });
 
@@ -146,7 +154,7 @@ module.exports = (io: Server) => {
          data.player.play(new Track(track), { force: true });
       });
 
-      socket.on('queue:new', async (track: any, callback?: (tracks: any[]) => void) => {
+      socket.on('queue:new', async (track: any, callback?: (tracks: any) => void) => {
          const data = await validate();
          if (data?.error || !data) return;
 
@@ -155,7 +163,7 @@ module.exports = (io: Server) => {
             resquester: socket.user || 0,
          };
 
-         data.player.queue.new(track, { requester: socket.user });
+         data.player.queue.new(new Track(track), { requester: socket.user });
          socket.emit('status', {
             type: 'done',
             message: `New track added to queue!`,
@@ -176,14 +184,14 @@ module.exports = (io: Server) => {
       socket.on('player:pause', async () => {
          const data = await validate();
          if (data?.error || !data) return;
-         if (!data.player.playing) return;
+         if (data.player.paused) return;
          data.player.pause();
       });
 
       socket.on('player:resume', async () => {
          const data = await validate();
          if (data?.error || !data) return;
-         if (data.player.playing) return;
+         if (!data.player.paused) return;
          data.player.resume();
       });
 
@@ -191,7 +199,7 @@ module.exports = (io: Server) => {
          const data = await validate();
          if (data?.error || !data) return;
          if (!data.player.current) return;
-         const next = data.player.queue.next(data.player.current);
+         const next = data.player.queue.next();
          if (next) data.player.play(next, { force: true });
       });
 
@@ -199,25 +207,28 @@ module.exports = (io: Server) => {
          const data = await validate();
          if (data?.error || !data) return;
          if (!data.player.current) return;
-         const previus = data.player.queue.previous(data.player.current);
+         const previus = data.player.queue.previous();
          if (previus) data.player.play(previus, { force: true });
       });
 
       socket.on('queue:repeat', async (value: 'track' | 'off' | 'queue') => {
          const data = await validate();
          if (data?.error || !data) return;
+         console.log(value);
          data.player.queue.setRepeat(value);
       });
 
       socket.on('queue:shuffle', async (value: boolean) => {
          const data = await validate();
          if (data?.error || !data) return;
+         if (!isBoolean(value)) return;
          value ? data.player.queue.shuffle() : data.player.queue.reorder();
       });
 
       socket.on('player:volume', async (value: number) => {
          const data = await validate();
          if (data?.error || !data) return;
+
          data.player.setVolume(value);
       });
 

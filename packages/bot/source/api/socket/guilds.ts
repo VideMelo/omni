@@ -33,11 +33,13 @@ export default (io: Server): void => {
 
       socket.on('voice:sync', async (callback?: () => void) => {
          const status = Date.now();
-         socket.emit('status', {
-            type: 'async',
-            message: 'Synchronizing with your voice channel',
-            async: status,
-         });
+         if (!socket.voice) {
+            socket.emit('status', {
+               type: 'async',
+               message: 'Synchronizing with your voice channel',
+               async: status,
+            });
+         }
 
          if (!socket.user) {
             for (let i = 0; i < 10; i++) {
@@ -98,8 +100,7 @@ export default (io: Server): void => {
 
             socket.emit('status', {
                type: 'done',
-               message:
-                  queue?.voice === channel.id ? `Playing in [${channel.name}]` : undefined,
+               message: queue?.voice === channel.id ? `Playing in [${channel.name}]` : undefined,
                respond: status,
             });
 

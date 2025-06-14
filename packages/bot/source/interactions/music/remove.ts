@@ -27,7 +27,7 @@ export default class Remove extends Interaction {
 
          const index = context.raw.options.getInteger('index');
 
-         if (index! > player.queue.tracks.length)
+         if (index! > player.queue.tracks.size)
             return await context.replyErro("You can't remove a track that hasn't been added yet.");
 
          const track = player.queue.remove(index!);

@@ -17,13 +17,15 @@ class Queue extends Interaction {
 
          const queue = player.queue;
 
-         const tracks = queue.tracks.map((track, index) => {
-            return `> **${index + 1}.** ${track.name}\n> \`${track.artist.name}\``;
+         const tracks = queue.tracks.map((track) => {
+            return `> **${track.index! + 1}.** ${track.name}\n> \`${track.artist.name}\``;
          });
 
          const pages = client.embed.pages(tracks);
-         const current = queue.tracks.find((track) => track.id === player.current!.id)!
-         const next = queue.next(current)
+         const current = queue.tracks.find((track) => track.id === player.current?.id)!;
+         if (!current) return context.replyErro('No current playing song found!')
+            
+         const next = queue.next();
          const color = await client.embed.color(current.thumbnail!);
          const embeds = pages.map((track, index) => {
             return client.embed.new({
@@ -32,7 +34,9 @@ class Queue extends Interaction {
                fields: [
                   {
                      name: 'Current',
-                     value: `**${current.index! + 1}.** ${current.name}\n\`${current.artist.name}\``,
+                     value: `**${current.index! + 1}.** ${current.name}\n\`${
+                        current.artist.name
+                     }\``,
                      inline: true,
                   },
                   {
@@ -48,7 +52,7 @@ class Queue extends Interaction {
                   },
                ],
                footer: {
-                  text: `Queue  •  ${queue.tracks.length} tracks`,
+                  text: `Queue  •  ${queue.tracks.size} tracks`,
                },
             });
          });

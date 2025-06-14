@@ -18,7 +18,6 @@ export default class Clear extends Interaction {
          if (client.verify.isNotInSameVoice(context)) return;
          if (client.verify.isEmptyQueue(context)) return;
          if (!player) return await context.replyErro('No player found for this guild!');
-         
 
          player.queue.clear();
          return await context.raw.reply('Queue cleared!');

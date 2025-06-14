@@ -2,6 +2,7 @@ import Bot from '../../core/Bot.js';
 import { InteractionContext } from '../../modules/Interactions.js';
 import Interaction from '../../handlers/Interaction.js';
 import { AutocompleteInteraction } from 'discord.js';
+import { Track } from '../../handlers/Media.js';
 
 export default class Play extends Interaction {
    constructor() {
@@ -29,12 +30,10 @@ export default class Play extends Interaction {
       context: AutocompleteInteraction<'cached'>;
    }) {
       try {
-         const error =
-            client.verify.isNotInSameVoice(context) || client.verify.isUserNotInVoice(context);
-         if (error) {
+         if (client.verify.isNotInSameVoice(context) || client.verify.isUserNotInVoice(context)) {
             return await context.respond([
                {
-                  name: `${error.message} Please join one to play music!`,
+                  name: `Please join one to play music!`,
                   value: `403`, // ;-;
                },
             ]);
@@ -74,7 +73,8 @@ export default class Play extends Interaction {
 
          let player = client.players.get(context.guild!.id);
 
-         if (!player) player = await client.initGuildPlayer(context.member!.voice.channel!);
+         if (!player)
+            player = await client.initGuildPlayer(context.member!.voice.channel!, context.channel!);
          if (!player) {
             return await context.replyErro(
                'An error occurred while initializing the guild player!'
@@ -84,10 +84,11 @@ export default class Play extends Interaction {
          console.log(`Searching for: ${input}`);
          const search = await client.search.resolve(input);
          if (!search?.items.tracks) return await context.replyErro('No tracks found.');
-         const track = await player.play(search.items.tracks[0]).catch(() => {
+
+         const track = await player.play(new Track(search.items.tracks[0])).catch(() => {
             context.replyErro('An error occurred while playing the track!');
          });
-         if (!track) return;
+         if (!track) return context.replyErro('An error occurred while playing the track!');
 
          const embed = client.embed.new({
             description: `Added  **[${track.name}](${track.metadata!.url})** by **[${

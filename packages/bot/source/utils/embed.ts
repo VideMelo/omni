@@ -48,7 +48,13 @@ export default class Embed {
 
    public async color(
       image: string,
-      type: 'Vibrant' | 'Muted' | 'DarkVibrant' | 'DarkMuted' | 'LightVibrant' | 'LightMuted' = 'Vibrant'
+      type:
+         | 'Vibrant'
+         | 'Muted'
+         | 'DarkVibrant'
+         | 'DarkMuted'
+         | 'LightVibrant'
+         | 'LightMuted' = 'Vibrant'
    ): Promise<string> {
       const swatches = await Vibrant.from(image).getSwatches();
       return swatches?.[type]?.hex ?? '#91D7E0';

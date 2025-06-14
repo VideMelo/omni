@@ -2,7 +2,7 @@ import Bot from '../../core/Bot.js';
 import { InteractionContext } from '../../modules/Interactions.js';
 import Interaction from '../../handlers/Interaction.js';
 
-export default  class Volume extends Interaction {
+export default class Volume extends Interaction {
    constructor() {
       super({
          name: 'volume',
@@ -24,14 +24,12 @@ export default  class Volume extends Interaction {
          if (client.verify.isEmptyQueue(context)) return;
          if (client.verify.isNotPlaying(context, player)) return;
 
-
-
          const volume = context.raw.options.getInteger('volume')!;
 
          if (volume < 0 || volume > 100)
             return await context.replyErro('Volume must be between 0 and 100');
 
-         player.setVolume(volume / 100);
+         player.setVolume(100);
          await context.raw.reply(`Volume: \`${volume}%\``);
       } catch (err: any) {
          throw new Error(err);

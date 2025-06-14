@@ -24,10 +24,15 @@ export default function Page() {
    const { metadata, setMetadata }: any = useOutletContext();
    const [queue, setQueue]: any = useState([]);
    const [track, setTrack]: any = useState(null);
+   const [cover, setCover]: any = useState(null);
 
    const [palette, setPalette]: any = useState(null);
    const [timer, setTimer]: any = useState(0);
    const [playing, setPlaying]: any = useState(false);
+   const [paused, setPaused]: any = useState(false);
+   const [repeat, setRepeat]: any = useState('off');
+   const [shuffled, setShuffled]: any = useState(false);
+   const [volume, setVolume]: any = useState(100);
 
    const [player, setPlayer]: any = useState(null);
 
@@ -47,6 +52,11 @@ export default function Page() {
       setPalette(metadata.palette);
       setTrack({ ...metadata.track, duration: (metadata.track?.duration - 2500) | 0 });
       setTimer(metadata.timer);
+      setVolume(metadata.player.volume);
+      setRepeat(metadata.queue.repeat);
+      setShuffled(metadata.queue.shuffled);
+      setPaused(metadata.player.paused);
+      setCover(metadata.cover);
    }, [metadata]);
 
    if (!metadata || !track || !palette || !player) return null;
@@ -94,6 +104,7 @@ export default function Page() {
                         }}
                         onCommit={(value: any) => {
                            setTimer(value.time);
+                           socket.emit('player:seek', value.time);
                         }}
                      />
                   </div>
@@ -102,31 +113,31 @@ export default function Page() {
                         <Plus className="w-6 h-6" />
                      </button>
                      <div className="flex w-full justify-center gap-10 items-center">
-                        <button onClick={() => socket.emit('previous')}>
+                        <button onClick={() => socket.emit('player:previous')}>
                            <Previous className="w-[50px] h-[50px] fill-white" />
                         </button>
-                        {!playing ? (
-                           <button onClick={() => socket.emit('resume')}>
+                        {paused ? (
+                           <button onClick={() => socket.emit('player:resume')}>
                               <Play className="w-16 h-16 fill-white" />
                            </button>
                         ) : (
-                           <button onClick={() => socket.emit('pause')}>
+                           <button onClick={() => socket.emit('player:pause')}>
                               <Pause className="w-16 h-16 fill-white" />
                            </button>
                         )}
-                        <button onClick={() => socket.emit('next')}>
+                        <button onClick={() => socket.emit('player:next')}>
                            <Next className="w-[50px] h-[50px] fill-white" />
                         </button>
                      </div>
                      <div className="flex w-1/5 justify-center gap-2 items-center">
-                        <button onClick={() => socket.emit('')}>
+                        <button onClick={() => socket.emit('player:volume', 0)}>
                            <VolumeLow className="w-[30px] h-[30px] fill-white" />
                         </button>
                         <Slider
-                           value={60}
+                           value={volume}
                            duration={100}
                            onChange={() => {}}
-                           onCommit={() => {}}
+                           onCommit={(value: any) => socket.emit('player:volume', value.time)}
                            showTimers={false}
                         />
                      </div>

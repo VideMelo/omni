@@ -14,8 +14,7 @@ import fluent from 'fluent-ffmpeg';
 
 import Queue from './Queue.js';
 import logger from '../utils/logger.js';
-import { Playlist } from 'youtube-sr';
-import Search from './Search.js';
+import EventEmitter from 'node:events';
 
 interface PlayerOptions {
    voice: string;
@@ -26,15 +25,15 @@ interface PlayerOptions {
    autoleave?: boolean;
 }
 
-export default class Player {
+export default class Player extends EventEmitter {
    public client: Bot;
 
    public voice: string;
    public guild: string;
    public channel?: string;
-   public volume?: number;
-   public autoplay?: boolean;
-   public autoleave?: boolean;
+   public volume: number;
+   public autoplay: boolean;
+   public autoleave: boolean;
 
    public queue: Queue;
 
@@ -43,23 +42,38 @@ export default class Player {
    private audioresource?: Voice.AudioResource;
 
    public playing: boolean;
+   public paused: boolean;
+   public buffering: boolean;
 
    public current?: Track;
    public metadata: any;
 
+   public position: number;
+
    constructor(client: Bot, { guild, voice, channel, volume, autoplay, autoleave }: PlayerOptions) {
+      super();
+
       this.client = client;
 
       this.guild = guild;
       this.voice = voice;
       this.channel = channel;
-      this.volume = volume;
-      this.autoplay = autoplay;
-      this.autoleave = autoleave;
+      this.volume = volume || 100;
+      this.autoplay = autoplay || false;
+      this.autoleave = autoleave || false;
 
       this.playing = false;
+      this.paused = false;
 
-      this.queue = new Queue(guild);
+      this.buffering = false;
+
+      this.queue = new Queue(guild, this);
+
+      this.position = 0;
+   }
+
+   public socket() {
+      this.client.socket.to(this.guild).emit('player:update');
    }
 
    public async connect(channel: string) {
@@ -82,31 +96,34 @@ export default class Player {
             behaviors: { noSubscriber: Voice.NoSubscriberBehavior.Play },
          });
          this.audioplayer
-            .on(Voice.AudioPlayerStatus.Playing, (state) => {
+            .on(Voice.AudioPlayerStatus.Playing, () => {
                this.playing = true;
-
-               console.log(
-                  `Playing track: ${this.current!.name} by ${this.current!.artist.name} (${
-                     this.current!.id
-                  })`
-               );
+               this.paused = false;
+               this.emit('nowPlaying', this, this.current);
+               this.socket();
             })
             .on(Voice.AudioPlayerStatus.Idle, () => {
                this.playing = false;
-               const next = this.queue.next(this.current!);
-               if (!next) return;
+
+               const next = this.queue.next();
+               if (!next) return this.emit('queueEnd', this);
+               this.socket();
                this.play(next);
             })
             .on(Voice.AudioPlayerStatus.Buffering, () => {
                this.playing = false;
             });
+         this.socket();
       } catch (error: any) {
          logger.error(error);
       }
    }
 
    public disconnect() {
-      if (this.connection) this.connection.destroy();
+      if (this.connection) {
+         this.connection.destroy();
+         this.socket();
+      }
    }
 
    public destroy() {}
@@ -122,10 +139,11 @@ export default class Player {
       try {
          if (!(track instanceof Track)) return;
          if (!this.audioplayer || !this.connection) return;
+         if (this.buffering) return;
+         this.buffering = true;
 
          track = metadata.builded ? track : await this.handleTrackData(track);
-         if (this.playing || this.queue.tracks.length === 0)
-            track = this.queue.new(track, metadata)!;
+         if (this.playing || this.queue.tracks.size === 0) track = this.queue.new(track, metadata)!;
          if (this.playing) if (!metadata.seek && !metadata.force) return track;
 
          const stream = await this.getAudioStream(track, metadata);
@@ -139,17 +157,24 @@ export default class Player {
 
          this.audioresource.volume?.setVolume(this.volume ? this.volume / 100 : 1);
 
-         if (this.playing) this.audioplayer.stop(); // ;-;
+         if (this.playing) this.stopAudioPlayer();
          this.audioplayer.play(this.audioresource);
+         this.connection.subscribe(this.audioplayer);
          this.current = track;
 
-         this.connection.subscribe(this.audioplayer);
-
          if (!track.cached) this.archiveTrackData(track, stream.opus, stream.chunks);
+         this.buffering = false;
          return track;
       } catch (erro: any) {
          logger.error('error', erro);
       }
+   }
+
+   stopAudioPlayer() {
+      if (!this.audioplayer) return;
+      this.audioplayer.stop();
+      this.playing = false;
+      this.socket();
    }
 
    async archiveTrackData(track: Track, stream: Stream.PassThrough, chunks: Buffer[]) {
@@ -249,6 +274,9 @@ export default class Player {
       if (cached?.source === 'spotify') cached.source = 'cache';
       if (cached) return cached;
 
+      const existing = this.queue.tracks.get(track.id);
+      if (existing) if (existing.metadata?.id) return existing;
+
       const query = `${track.artist.name} - ${track.name} Auto-generated by YouTube`;
       const result = await this.client.search.youtube.search(query);
       if (!result) throw new Error('No search results found');
@@ -287,6 +315,7 @@ export default class Player {
          }
       }
 
+      this.position = metadata.seek * 1000 || 0;
       const opus = fluent({ source: stream })
          .setFfmpegPath(ffmpeg as unknown as string)
          .format('opus')
@@ -297,10 +326,7 @@ export default class Player {
          });
 
       process.once('uncaughtException', (err: any) => {
-         if (err.code === 'ERR_STREAM_PREMATURE_CLOSE') {
-            logger.warn('Stream closed prematurely (global). Ignoring.');
-            return;
-         }
+         if (err.code === 'ERR_STREAM_PREMATURE_CLOSE') return;
          logger.error('Uncaught Exception:', err);
          process.exit(1);
       });
@@ -314,11 +340,15 @@ export default class Player {
    public async seek(time: number) {
       if (!this.current) return;
       await this.play(this.current!, { seek: time, builded: true });
+
+      this.socket();
    }
 
    public pause() {
       if (this.audioplayer) {
          this.audioplayer.pause();
+         this.paused = true;
+         this.socket();
       } else {
          logger.warn('Audio player is not initialized.');
       }
@@ -327,6 +357,8 @@ export default class Player {
    public resume() {
       if (this.audioplayer) {
          this.audioplayer.unpause();
+         this.paused = false;
+         this.socket();
       } else {
          logger.warn('Audio player is not initialized.');
       }
@@ -338,19 +370,19 @@ export default class Player {
    }
 
    public getPosition() {
-      return this.audioresource?.playbackDuration;
+      return this.audioresource?.playbackDuration! + this.position;
    }
 
    public setVolume(value: number) {
-      if (value < 0 || value > 100) {
-         logger.warn('Volume must be between 0 and 100.');
-         return;
-      }
+      if (isNaN(value)) return;
+      if (value < 0 || value > 100) return;
+      if (value == this.volume) return;
       if (this.audioresource) {
          const volume = this.audioresource.volume;
          if (volume) {
-            volume.setVolume(value);
+            volume.setVolume(value / 100);
             this.volume = value;
+            this.socket();
          } else {
             logger.warn('Audio resource volume is not set.');
          }

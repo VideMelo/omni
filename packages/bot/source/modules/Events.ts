@@ -19,45 +19,48 @@ export default class Events {
          logger.async('Started loading events:');
          let length = 0;
 
-         const queue = this.client.players.set.bind(this.client.players);
-         this.client.players.set = (key, value) => {
-            const result = queue(key, value);
+         
+         await Promise.all(
+            folders.map(async (folder) => {
+               const files = fs
+                  .readdirSync(`./source/events/${folder}`)
+                  .filter((file) => file.endsWith('.ts'));
+               await Promise.all(
+                  files.map(async (file) => {
+                     try {
+                        const { default: Event } = await import(`../events/${folder}/${file}`);
+                        const event = new Event();
+                        if (folder === 'client') {
+                           this.client.on(event.name, (...args: any[]) =>
+                              event.execute(this.client, ...args)
+                           );
+                        } else if (folder === 'player') {
+                           const handler = (...args: any[]) => {
+                              event.execute(this.client, ...args)
+                           };
+                           this.list.push({
+                              name: event.name,
+                              handler,
+                           });
+                        }
+                        length++;
+                     } catch (error: any) {
+                        logger.error(`${file} failed: ${error}`, error);
+                     }
+                  })
+               );
+            })
+         );
+
+         const player = this.client.players.set.bind(this.client.players);
+         this.client.players.set = (key, event) => {
+            const result = player(key, event);
             this.list.forEach(({ name, handler }) => {
-               // value.on(name, handler);
+               event.on(name, handler);
             });
             return result;
          };
 
-         await Promise.all(folders.map(async(folder) => {
-            const files = fs
-               .readdirSync(`./source/events/${folder}`)
-               .filter((file) => file.endsWith('.ts'));
-            await Promise.all(files.map(async (file) => {
-               try {
-                  const { default: Event } = await import(`../events/${folder}/${file}`);
-                  const event = new Event();
-                  if (folder === 'client') {
-                     this.client.on(event.name, (...args: any[]) =>
-                        event.execute(this.client, ...args)
-                     );
-                  } else if (folder === 'player') {
-                     const handler = (...args: any[]) => event.execute(this.client, ...args);
-                     this.client.emit;
-                     this.list.push({
-                        name: event.name,
-                        handler,
-                     });
-
-                     this.client.players.forEach((player) => {
-                        // player.on(event.name, handler);
-                     });
-                  }
-                  length++;
-               } catch (error: any) {
-                  logger.error(`${file} failed: ${error}`, error);
-               }
-            }))
-         }))
          logger.done(`Successfully loaded ${length} events.`);
       } catch (error: any) {
          logger.error('Error loading events.', error);

@@ -20,7 +20,6 @@ export default class Resume extends Interaction {
          if (client.verify.isEmptyQueue(context)) return;
          if (client.verify.isNotPlaying(context, player)) return;
 
-
          player.resume();
          context.noReply();
       } catch (err: any) {

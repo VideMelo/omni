@@ -13,11 +13,10 @@ export default class Join extends Interaction {
 
    async execute({ client, context }: { client: Bot; context: InteractionContext }) {
       try {
-         if (client.verify.isUserNotInVoice(context)) return
+         if (client.verify.isUserNotInVoice(context)) return;
 
-         context.noReply()
-         client.initGuildPlayer(context.member!.voice.channel!);
-         
+         context.noReply();
+         client.initGuildPlayer(context.member!.voice.channel!, context.channel!);
       } catch (err: any) {
          throw new Error(err);
       }

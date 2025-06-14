@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import * as Discord from 'discord.js';
 import ytdl from 'youtube-dl-exec';
-import ytsr  from 'youtube-sr';
+import ytsr from 'youtube-sr';
 import { title } from 'node:process';
 import { Track, TrackMetadata } from './Media.js';
 
@@ -22,7 +22,7 @@ export default class YouTube {
    }
    async search(query: string) {
       console.log(`Searching YouTube for: ${query}`);
-      const result = (await ytsr.YouTube.search(query, { limit: 1, type: 'video' }))[0]
+      const result = (await ytsr.YouTube.search(query, { limit: 1, type: 'video' }))[0];
       return {
          id: result.id,
          source: 'youtube',
@@ -37,12 +37,13 @@ export default class YouTube {
             url: result.channel?.url,
             icon: result.channel?.icon,
          },
-      } as TrackMetadata
+      } as TrackMetadata;
    }
 
    getStream(url: string) {
       try {
-         const stream = ytdl.exec(url,
+         const stream = ytdl.exec(
+            url,
             {
                output: '-',
                format: 'bestaudio/best',

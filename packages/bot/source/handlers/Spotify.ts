@@ -1,6 +1,7 @@
 import SpotifyWebApi from 'spotify-web-api-node';
 import Logger from '../utils/logger.js';
 import { it } from 'node:test';
+import { Track } from './Media.js';
 
 interface SpotifyConfig {
    id: string;
@@ -25,9 +26,10 @@ interface SpotifyTrack {
    name: string;
    artist: SpotifyArtist;
    duration: number;
+   url: string;
    thumbnail?: string;
    query?: string;
-   album: SpotifyAlbum | { name: string; id: string; url?: string; thumbnail?: string };
+   album: SpotifyAlbum | { name: string; id: string; url?: string; thumbnail?: string, total: number };
 }
 
 interface SpotifyAlbum {
@@ -70,9 +72,10 @@ type SpotifySearchResultType = 'tracks' | 'albums' | 'playlists' | 'artists';
 interface SpotifySearchResult {
    type: SpotifySearchType | 'topResult' | 'searchResult';
    items: {
-      [key in SpotifySearchResultType]?: Array<
-         SpotifyTrack | SpotifyAlbum | SpotifyPlaylist | SpotifyArtist
-      >;
+      tracks?: SpotifyTrack[]
+      playlists?: SpotifyPlaylist[]
+      albums?: SpotifyAlbum[]
+      artists?: SpotifyArtist[]
    };
 }
 
@@ -129,7 +132,10 @@ export default class Spotify {
       throw new Error('Número máximo de tentativas atingido.');
    }
 
-   async search(query: string, options: SpotifySearchOptions = { types: ['track']}): Promise<SpotifySearchResult> {
+   async search(
+      query: string,
+      options: SpotifySearchOptions = { types: ['track'] }
+   ): Promise<SpotifySearchResult> {
       if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
 
       if (this.urls.pattern.test(query)) {
@@ -162,8 +168,8 @@ export default class Spotify {
                   total: album.total_tracks,
                   thumbnail: album.images[0]?.url,
                   url: album.external_urls.spotify,
-                  tracks: [], // Tracks are not included in search results, can be fetched later if needed
-               }))
+                  tracks: [],
+               })),
             },
          };
       }
@@ -275,7 +281,7 @@ export default class Spotify {
          types: ['artist', 'album', 'track'],
          limit: 15,
       }).then(async (res) => {
-         const tracks = res.items.tracks;
+         const tracks = res.items.tracks
          const albums = await Promise.all(
             (res.items.albums ?? [])
                .filter((item) => item.type == 'album')
@@ -334,6 +340,7 @@ export default class Spotify {
          source: 'spotify',
          id: track.id,
          name: track.name,
+         url: track.external_urls.spotify,
          artist: {
             name: track.artists[0].name,
             id: track.artists[0].id,

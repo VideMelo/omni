@@ -52,6 +52,7 @@ export class Track implements Track {
       streamable,
       url,
       index,
+      ogidx,
       requester,
       cached = false,
       metadata,
@@ -81,6 +82,7 @@ export class Track implements Track {
 
       this.id = id;
       this.index = index;
+      this.ogidx = ogidx;
       this.requester = requester;
       this.source = source;
       this.explicit = explicit;

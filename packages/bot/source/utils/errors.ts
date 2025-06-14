@@ -12,11 +12,6 @@ type ErrorType =
 
 type Interaction = InteractionContext | AutocompleteInteraction<'cached'>;
 
-interface ErrorResult {
-   type: ErrorType;
-   message: string;
-}
-
 class Verify {
    constructor(private readonly respond: boolean = true) {}
 
@@ -29,14 +24,14 @@ class Verify {
       interaction: Interaction,
       message: string,
       type: ErrorType
-   ): ErrorResult | undefined {
-      if (!condition) return undefined;
+   ): boolean {
+      if (!condition) return false;
 
       if (this.shouldRespond(interaction)) {
          interaction.replyErro(message);
       }
 
-      return { type, message };
+      return true;
    }
 
    isUserNotInVoice(interaction: Interaction) {
@@ -53,7 +48,12 @@ class Verify {
    isBotNotInVoice(interaction: Interaction) {
       const condition = !interaction.guild?.members.me?.voice?.channel;
 
-      return this.handle(condition, interaction, 'I must join a voice channel first.', 'botNotInVoice');
+      return this.handle(
+         condition,
+         interaction,
+         'I must join a voice channel first.',
+         'botNotInVoice'
+      );
    }
 
    isAlreadyInVoice(interaction: Interaction) {
@@ -82,7 +82,7 @@ class Verify {
    }
 
    isNotPlaying(interaction: Interaction, player: Player) {
-      const condition = !player.playing
+      const condition = !player.playing;
 
       return this.handle(
          condition,
@@ -95,7 +95,7 @@ class Verify {
    isEmptyQueue(interaction: Interaction) {
       if (interaction instanceof AutocompleteInteraction) return;
 
-      const condition = !interaction.queue?.tracks?.length;
+      const condition = !interaction.queue?.tracks?.size;
 
       return this.handle(condition, interaction, 'There are no tracks in the queue.', 'emptyQueue');
    }

@@ -24,13 +24,13 @@ export default class VoiceStateUpdate extends Event {
          ];
 
          const clients = [now.guild.id, `${old?.channel?.id}`, `${now?.channel?.id}`, ...members];
-         client.socket.to(clients).emit('botVoiceUpdate');
+         client.socket.to(clients).emit('bot:voice.update');
 
          if (old?.channel?.id && !now?.channel?.id) return player.disconnect();
          if (old?.channel?.id && now?.channel?.id && old?.channel?.id !== now?.channel?.id)
             return player.setVoiceChannel(now.channel.id);
       }
 
-      client.socket.to(now.id).emit('userVoiceUpdate');
+      client.socket.to(now.id).emit('user:voice.update');
    }
 }

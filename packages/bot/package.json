@@ -5,7 +5,7 @@
    "scripts": {
       "build": "tsc -p tsconfig.json",
       "start": "node dist/index.js",
-      "dev": "tsx source/index.ts"
+      "dev": "nodemon"
    },
    "main": "dist/index.js",
    "type": "module",

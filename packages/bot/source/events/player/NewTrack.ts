@@ -12,8 +12,7 @@ export default class NewTrack extends Event {
    }
 
    async execute(client: Bot, player: Player, track: Track) {
-      if (!player.channel || !track) return;
-      if (player.queue.tracks.length == 1) return;
+      if (!player.channel || !track.id) return;
 
       const color = await client.embed.color(track.thumbnail ?? '');
 
@@ -24,7 +23,7 @@ export default class NewTrack extends Event {
          },
          thumbnail: track?.thumbnail ?? '',
          title: `${track.name.length > 36 ? `${track.name.slice(0, 36)}...` : track.name}`,
-         description: `${track.name}\n`,
+         description: `${track.artist.name}\n`,
       });
 
       const channel = await client.channels.fetch(player.channel)

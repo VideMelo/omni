@@ -79,24 +79,25 @@ export default class Bot extends Client {
       const existing = this.players.get(voice.guild.id);
       if (existing) return existing;
 
-      const queue = new Player(this, {
+      const player = new Player(this, {
          voice: voice.id,
          guild: voice.guild.id,
+         channel: channel ? channel.id : undefined
       });
-      this.players.set(voice.guild.id, queue);
+      this.players.set(voice.guild.id, player);
 
-      await queue.connect(voice.id);
-      // queue.on('disconnect', () => {
-      //    this.queue.delete(guild.id);
-      // });
+      await player.connect(voice.id);
+      player.on('disconnect', () => {
+         this.players.delete(voice.guild.id);
+      });
 
-      return queue;
+      return player;
    }
 
    async destroyGuildPlayer(guild: string) {
       const player = this.players.get(guild);
       if (!player) return;
-      await player.disconnect();
+      player.disconnect();
       this.players.delete(guild);
    }
 

@@ -12,7 +12,7 @@ export default class NowPlaying extends Event {
    }
 
    async execute(client: Bot, player: Player, track: Track) {
-      if (!player.channel) return;
+      if (!player.channel || !track.id) return;
 
       const color = await client.embed.color(track?.thumbnail ?? '');
 
@@ -23,7 +23,7 @@ export default class NowPlaying extends Event {
          },
          thumbnail: track?.thumbnail ?? '',
          title: `${track.name.length > 36 ? `${track.name.slice(0, 36)}...` : track.name}`,
-         description: `${track.name}`,
+         description: `${track.artist.name}`,
       });
 
       try {

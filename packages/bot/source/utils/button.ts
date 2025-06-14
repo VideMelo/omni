@@ -168,9 +168,7 @@ export default class Buttons {
                [type]: type === 'embeds' ? [pages[page]] : pages[page],
                components: [row],
             });
-         } catch (error) {
-            // Silenciar erro
-         }
+         } catch (error) {}
       });
 
       collector.on('end', async () => {
@@ -183,9 +181,7 @@ export default class Buttons {
                [type]: type === 'embeds' ? [pages[page]] : pages[page],
                components: [row],
             });
-         } catch (error) {
-            // Silenciar erro
-         }
+         } catch (error) {}
       });
    }
 }

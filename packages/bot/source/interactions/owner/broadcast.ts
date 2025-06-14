@@ -46,10 +46,10 @@ export default class Broadcast extends Interaction {
       }
 
       for (const player of players) {
-         if (player.queue.tracks.length === 0) {
+         if (player.queue.tracks.size === 0) {
             return await context.replyErro('No tracks in the queue for the player!');
          }
-         await player.play(player.queue.tracks[0]);
+         await player.play(player.queue.tracks.at(0)!);
       }
    }
 }
