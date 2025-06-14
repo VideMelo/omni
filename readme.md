@@ -12,19 +12,23 @@ Omni is a music bot for Discord that transforms the musical experience into an i
 
 ## Get Started
 
+### Prerequisites
+- NodeJS 22.14
+- Phyton 3.12
+
+
 ### Install Packages
 
 ```sh
-yarn
+npm install turbo pnpm
+pnpm install
 ```
-
-> **Note:** If you don't have `yarn` installed, install with `npm install -g yarn`
 
 ### Development Setup
 
 #### Server
 
-Rename `.env.template` to `.env` in `./server` and set the following settings:
+Rename `.env.template` to `.env` in `./bot` and set the following settings:
 
 ```sh
 # Get this in https://discord.com/developers/applications
@@ -40,7 +44,7 @@ SPOTIFY_SECRET= # Spotify Secret
 
 #### Client
 
-Rename `.env.template` to `.env` in `./client` and set the following settings:
+Rename `.env.template` to `.env` in `./bot` and set the following settings:
 
 ```sh
 # Get this in https://discord.com/developers/applications
@@ -53,5 +57,5 @@ VITE_SERVER_URL=http://localhost:8443 # Your Server Url Domain
 ### Run
 
 ```
-yarn dev
+turbo dev
 ```
