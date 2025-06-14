@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import Cookies from 'js-cookie';
 import axios from 'axios'
@@ -9,8 +9,38 @@ import Home from './pages/Home.jsx';
 import Search from './pages/Search.jsx';
 import Login from './pages/Login.jsx';
 import Queue from './pages/Queue.jsx';
+
 import socket from './services/socket.js';
 
+
+function RedirectRoute() {
+   const navigate = useNavigate();
+
+   useEffect(() => {
+      const query = new URLSearchParams(location.search);
+      const code = query.get('code');
+      const state = query.get('state');
+
+      if (code) {
+         axios
+            .get(`${import.meta.env.VITE_API_URL}/auth`, {
+               params: {
+                  code,
+                  state,
+               },
+            })
+            .then((res) => {
+               console.log(res);
+               window.close();
+               window.opener.postMessage(res.data, '*');
+               window.location.href = '/';
+            })
+            .catch((err) => console.log(err));
+      }
+   }, []);
+
+   return null;
+}
 
 const Routers = () => {
    const location = useLocation();
@@ -40,8 +70,9 @@ const Routers = () => {
    return (
       <Routes>
          <Route path="/login" element={isAuth ? <Navigate to="/" replace /> : <Login />} />
+         <Route path="/redirect" element={<RedirectRoute />} />
          <Route path="/" element={!isAuth ? <Navigate to="/login" replace /> : <Layout />}>
-            <Route path='/' element={<Home />} />
+            <Route path="/" element={<Home />} />
             <Route path="/search" element={<Search />} />
             <Route path="/queue" element={<Queue />} />
             <Route path="/*" element={<Navigate to="/" replace />} />

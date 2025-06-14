@@ -6,12 +6,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import Discord from '../assets/icons/Discord.js';
 import Scout from '../assets/icons/Scout.js';
 import useAuth from '../hooks/useAuth.js';
+import Status from '../components/Status.js';
 import axios from 'axios';
 
 export default function Page() {
+   const [status, setStatus]: any = useState(null)
+
    const navigate = useNavigate();
    const getAuth = useAuth({
-      redirectUri: `${window.location.href}`,
+      redirectUri: `${window.location.origin}/redirect`,
       clientId: import.meta.env.VITE_DISCORD_ID,
       authUrl: 'https://discord.com/api/oauth2/authorize',
       scopes: ['identify', 'guilds'],
@@ -26,8 +29,8 @@ export default function Page() {
          navigate('/');
          window.location.reload();
       },
-      onError: () => {
-         console.error('Error in login');
+      onError: (data: any) => {
+         setStatus({ type: 'error', message: 'Error while authenticating with Discord, please try again later!'})
       },
    });
 
@@ -71,6 +74,12 @@ export default function Page() {
             <Discord className="w-7 h-7 flex-shrink-0" />
             <span className="whitespace-nowrap text-xl">Sign in with Discord</span>
          </button>
+         <Status
+            status={status}
+            styles="absolute right-1/2 left-1/2 bottom-6"
+            hidden={'opacity-0'}
+            visible={'opacity-100'}
+         />
       </main>
    );
 }

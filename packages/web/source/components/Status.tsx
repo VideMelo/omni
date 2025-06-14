@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import Omni from '../assets/icons/Omni';
-import Loading from '../assets/icons/Loading';
+import Omni from '../assets/icons/Omni.js';
+import Loading from '../assets/icons/Loading.js';
 
 function Status({ status, styles, visible, hidden }) {
    const [queue, setQueue] = useState([]);
