@@ -1,19 +1,15 @@
 import 'dotenv/config';
-import fs from 'node:fs';
 
 import {
    Client,
    Collection,
    GatewayIntentBits,
-   Guild,
    VoiceBasedChannel,
    TextBasedChannel,
 } from 'discord.js';
 
 import Interactions from '../modules/Interactions.js';
 import Events from '../modules/Events.js';
-
-import Queue from '../handlers/Queue.js';
 
 import { server, io } from '../api/index.js';
 import logger from '../utils/logger.js';
