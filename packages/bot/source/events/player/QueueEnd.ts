@@ -13,12 +13,13 @@ export default class QueueEnd extends Event {
    async execute(client: Bot, player: Player) {
       setTimeout(() => {
          if (!player.playing) return client.destroyGuildPlayer(player.guild);
-      }, 1000);
+      }, 180000);
 
       if (!player.channel) return;
 
       const Embed = client.embed.new({
-         title: 'Queue ended!',
+         description:
+            'No more songs in the queue. Leaving the voice channel in 3 minutes if nothing’s added.',
       });
 
       const channel = await client.channels.fetch(player.channel);

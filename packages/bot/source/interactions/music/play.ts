@@ -33,7 +33,7 @@ export default class Play extends Interaction {
          if (client.verify.isNotInSameVoice(context) || client.verify.isUserNotInVoice(context)) {
             return await context.respond([
                {
-                  name: `Please join one to play music!`,
+                  name: `Please join in voice channel to play music!`,
                   value: `403`, // ;-;
                },
             ]);
@@ -85,19 +85,13 @@ export default class Play extends Interaction {
          const search = await client.search.resolve(input);
          if (!search?.items.tracks) return await context.replyErro('No tracks found.');
 
+         if (!player.channel) player.setTextChannel(context.channel!.id)
          const track = await player.play(new Track(search.items.tracks[0])).catch(() => {
             context.replyErro('An error occurred while playing the track!');
          });
          if (!track) return context.replyErro('An error occurred while playing the track!');
 
-         const embed = client.embed.new({
-            description: `Added  **[${track.name}](${track.metadata!.url})** by **[${
-               track.artist.name
-            }](${track.metadata!.artist.url})** to queue`,
-         });
-         await context.raw.editReply({
-            embeds: [embed],
-         });
+         return await context.noReply()
       } catch (error: any) {
          throw new Error(error);
       }

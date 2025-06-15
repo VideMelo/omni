@@ -137,17 +137,21 @@ export default class Player extends EventEmitter {
       }
    ): Promise<Track | undefined> {
       try {
-         if (!(track instanceof Track)) return;
-         if (!this.audioplayer || !this.connection) return;
+         if (!(track instanceof Track)) throw new Error('Track is not a Track!');
+         if (!this.audioplayer || !this.connection) throw new Error('Player not initied');
          if (this.buffering) return;
-         this.buffering = true;
 
          track = metadata.builded ? track : await this.handleTrackData(track);
          if (this.playing || this.queue.tracks.size === 0) track = this.queue.new(track, metadata)!;
          if (this.playing) if (!metadata.seek && !metadata.force) return track;
 
+         this.buffering = true;
+
          const stream = await this.getAudioStream(track, metadata);
-         if (!stream) return;
+         if (!stream) {
+            this.buffering = false;
+            return;
+         }
 
          this.audioresource = Voice.createAudioResource(stream.opus, {
             inlineVolume: true,
