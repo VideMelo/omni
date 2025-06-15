@@ -42,7 +42,7 @@ export default function Page() {
 
       if (code) {
          axios
-            .get(`${import.meta.env.VITE_API_URL}/auth`, {
+            .get(`${window.location.origin}/api/auth`, {
                params: {
                   code,
                   state,

@@ -50,7 +50,6 @@ Rename `.env.template` to `.env` in `./bot` and set the following settings:
 # Get this in https://discord.com/developers/applications
 VITE_DISCORD_ID= # Discord Bot ID
 
-VITE_API_URL=http://localhost:8080/api # Your API URL Domain
 VITE_SERVER_URL=http://localhost:8443 # Your Server Url Domain
 ```
 

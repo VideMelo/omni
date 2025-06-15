@@ -30,7 +30,7 @@ function RedirectRoute({ setStatus }: any) {
       if (code) {
          try {
             axios
-               .get(`${import.meta.env.VITE_API_URL}/auth`, {
+               .get(`${window.location.origin}/api/auth`, {
                   params: {
                      code,
                      state,
