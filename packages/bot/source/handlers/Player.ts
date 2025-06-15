@@ -1,7 +1,6 @@
 import Bot from '../core/Bot.js';
 import { Track } from './Media.js';
 
-import fs from 'node:fs';
 import { Stream } from 'node:stream';
 
 import * as Discord from 'discord.js';
@@ -15,6 +14,7 @@ import fluent from 'fluent-ffmpeg';
 import Queue from './Queue.js';
 import logger from '../utils/logger.js';
 import EventEmitter from 'node:events';
+import Cache from './Cache.js';
 
 interface PlayerOptions {
    voice: string;
@@ -49,6 +49,7 @@ export default class Player extends EventEmitter {
    public metadata: any;
 
    public position: number;
+   public cache: Cache;
 
    constructor(client: Bot, { guild, voice, channel, volume, autoplay, autoleave }: PlayerOptions) {
       super();
@@ -68,6 +69,7 @@ export default class Player extends EventEmitter {
       this.buffering = false;
 
       this.queue = new Queue(guild, this);
+      this.cache = new Cache(client, '');
 
       this.position = 0;
    }
@@ -166,7 +168,7 @@ export default class Player extends EventEmitter {
          this.connection.subscribe(this.audioplayer);
          this.current = track;
 
-         if (!track.cached) this.archiveTrackData(track, stream.opus, stream.chunks);
+         if (!track.cached) this.cache.archive(track, stream.opus, stream.chunks);
          this.buffering = false;
          return track;
       } catch (erro: any) {
@@ -181,100 +183,8 @@ export default class Player extends EventEmitter {
       this.socket();
    }
 
-   async archiveTrackData(track: Track, stream: Stream.PassThrough, chunks: Buffer[]) {
-      if (!stream) return;
-      const channel = (await this.client.channels.fetch(
-         '1343313574898040862'
-      )) as Discord.TextChannel;
-      await new Promise((resolve, reject) => {
-         stream.on('end', resolve);
-         stream.on('error', reject);
-      });
-
-      const buffered = Buffer.concat(chunks);
-
-      if (!channel) throw new Error('Channel not found!');
-
-      const attachment = new Discord.AttachmentBuilder(buffered, {
-         name: `${track.id}.opus`,
-      });
-      const message = await channel.send({
-         content: `${track.name} - ${track.artist.name}`,
-         files: [attachment],
-      });
-
-      const data = {
-         id: track.id,
-         track: {
-            ...track,
-            source: 'cache',
-         },
-         message: message.id,
-      };
-
-      const file = 'tracks.json';
-      try {
-         const json = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-         fs.writeFileSync(file, JSON.stringify([...json, data], null, 2));
-      } catch (error: any) {
-         logger.error('Erro:', error);
-      }
-   }
-
-   private async loadCachedTrack(track: Track): Promise<Track | undefined> {
-      const tracks = (() => {
-         try {
-            return JSON.parse(fs.readFileSync('tracks.json', 'utf8'));
-         } catch {
-            return [];
-         }
-      })() as { id: string; track: Track; message: string }[];
-
-      const cache = tracks.find((item) => item.id === track.id);
-      if (!cache) return;
-
-      const channel = (await this.client.channels.fetch(
-         '1343313574898040862'
-      )) as Discord.TextChannel;
-      if (!channel) return;
-
-      const message = await channel.messages.fetch(cache.message);
-      const url = message.attachments.first()?.url;
-      if (!url) return;
-      return new Track({
-         ...cache.track,
-         cached: true,
-         streamable: url,
-      });
-   }
-
-   private async getCachedStream(url: string) {
-      if (url?.includes('.opus')) {
-         const response = await fetch(url).catch((err) => {
-            logger.error('Error fetching audio:', err);
-            return undefined;
-         });
-
-         if (!response || !response.body) {
-            logger.error('No response or response body when fetching audio.');
-            return;
-         }
-
-         const reader = response.body.getReader();
-         const nodeStream = new Stream.Readable({
-            async read() {
-               const { done, value } = await reader.read();
-               if (done) this.push(null);
-               else this.push(Buffer.from(value));
-            },
-         });
-
-         return nodeStream;
-      }
-   }
-
    private async handleTrackData(track: Track): Promise<Track> {
-      const cached = await this.loadCachedTrack(track);
+      const cached = await this.cache.getTrackData(track);
       if (cached?.source === 'spotify') cached.source = 'cache';
       if (cached) return cached;
 
@@ -304,7 +214,7 @@ export default class Player extends EventEmitter {
             return;
          }
 
-         const streamable = await this.getCachedStream(track.streamable);
+         const streamable = await this.cache.getAudioStream(track.streamable);
          if (streamable) streamable.pipe(stream);
          else {
             stream.destroy(new Error('Failed to create Cache Stream.'));
