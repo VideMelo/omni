@@ -69,7 +69,7 @@ export default class Player extends EventEmitter {
       this.buffering = false;
 
       this.queue = new Queue(guild, this);
-      this.cache = new Cache(client, '');
+      this.cache = new Cache(client);
 
       this.position = 0;
    }
@@ -213,7 +213,6 @@ export default class Player extends EventEmitter {
             stream.destroy(new Error('Track is cached but has no streamable URL.'));
             return;
          }
-
          const streamable = await this.cache.getAudioStream(track.streamable);
          if (streamable) streamable.pipe(stream);
          else {

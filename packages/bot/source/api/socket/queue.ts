@@ -214,7 +214,6 @@ module.exports = (io: Server) => {
       socket.on('queue:repeat', async (value: 'track' | 'off' | 'queue') => {
          const data = await validate();
          if (data?.error || !data) return;
-         console.log(value);
          data.player.queue.setRepeat(value);
       });
 

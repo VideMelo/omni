@@ -36,6 +36,7 @@ DISCORD_TOKEN= # Discord Bot Token
 DISCORD_ID= # Discord Bot ID
 DISCORD_SECRET= # Discord Bot Secret
 DISCORD_REDIRECT= # Discord Redirect URL Callback
+DISCORD_CACHE_CHANNEL= # Cache Channel ID
 
 # Get this in https://developer.spotify.com/dashboard
 SPOTIFY_ID= # Spotify ID

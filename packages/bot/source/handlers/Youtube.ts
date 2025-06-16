@@ -99,7 +99,6 @@ export default class YouTube {
    }
 
    getAudioBuffer(url: string): Promise<Buffer> {
-      console.log('getting buffer');
       return new Promise((resolve, reject) => {
          const subprocess = ytex.exec(
             url,

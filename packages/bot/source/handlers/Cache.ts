@@ -12,112 +12,115 @@
  * If you’re reading this, yeah… we’re not there yet.
  */
 
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import Stream from 'stream';
-
 import { Track } from './Media.js';
 import { AttachmentBuilder, TextChannel } from 'discord.js';
 
 import Bot from '../core/Bot.js';
 import logger from '../utils/logger.js';
 
+interface CachedTrack {
+   id: string;
+   encoded: string;
+   message: string;
+}
+
 export default class Cache {
    private client: Bot;
-   public channel: string;
-   constructor(client: Bot, channel: string) {
+   private channel: string;
+
+   constructor(client: Bot) {
       this.client = client;
-      this.channel = channel;
+      this.channel = client.config.cache
    }
 
    async archive(track: Track, stream: Stream.PassThrough, chunks: Buffer[]) {
       if (!stream) return;
-      const channel = (await this.client.channels.fetch(this.channel)) as TextChannel;
+
+      const channel = await this.client.channels
+         .fetch(this.channel)
+         .catch((err: any) => logger.error('Cache: Invalid Text Channel ID'));
+      
+      if (!channel) throw new Error('Text Channel not found!');
+      if (!channel.isSendable()) return
+
       await new Promise((resolve, reject) => {
-         stream.on('end', resolve);
-         stream.on('error', reject);
+         stream.once('end', resolve);
+         stream.once('error', reject);
       });
 
       const buffered = Buffer.concat(chunks);
+      const attachment = new AttachmentBuilder(buffered, { name: `${track.id}.opus` });
 
-      if (!channel) throw new Error('Channel not found!');
-
-      const attachment = new AttachmentBuilder(buffered, {
-         name: `${track.id}.opus`,
-      });
       const message = await channel.send({
          content: `${track.name} - ${track.artist.name}`,
          files: [attachment],
       });
 
-      const data = {
-         id: track.id,
-         track: {
-            ...track,
-            source: 'cache',
-         },
-         message: message.id,
-      };
+      const encoded = Buffer.from(JSON.stringify({ ...track, source: 'cache' })).toString('base64');
 
-      const file = 'tracks.json';
       try {
-         const json = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-         fs.writeFileSync(file, JSON.stringify([...json, data], null, 2));
+         const file = 'tracks.json';
+         const fileExists = await fs
+            .stat(file)
+            .then(() => true)
+            .catch(() => false);
+         const json: CachedTrack[] = fileExists ? JSON.parse(await fs.readFile(file, 'utf8')) : [];
+
+         json.push({
+            id: track.id,
+            encoded: encoded,
+            message: message.id,
+         });
+
+         await fs.writeFile(file, JSON.stringify(json, null, 2), 'utf8');
       } catch (error: any) {
-         logger.error('Erro:', error);
+         logger.error('Error to save cache:', error);
       }
    }
 
-   public async getTrackData(track: Track): Promise<Track | undefined> {
-      const tracks = (() => {
-         try {
-            return JSON.parse(fs.readFileSync('tracks.json', 'utf8'));
-         } catch {
-            return [];
-         }
-      })() as { id: string; track: Track; message: string }[];
+   async getTrackData(track: Track): Promise<Track | undefined> {
+      try {
+         const dataRaw = await fs.readFile('tracks.json', 'utf8');
+         const cachedTracks: CachedTrack[] = JSON.parse(dataRaw);
+         const cached = cachedTracks.find((item) => item.id === track.id);
+         if (!cached) return;
 
-      const cache = tracks.find((item) => item.id === track.id);
-      if (!cache) return;
+         const channel = (await this.client.channels.fetch(this.channel)) as TextChannel;
+         if (!channel) return;
 
-      const channel = (await this.client.channels.fetch(this.channel)) as TextChannel;
-      if (!channel) return;
+         const message = await channel.messages.fetch(cached.message);
+         const url = message.attachments.first()?.url;
+         if (!url) return;
 
-      const message = await channel.messages.fetch(cache.message);
-      const url = message.attachments.first()?.url;
-      if (!url) return;
-      return new Track({
-         ...cache.track,
-         cached: true,
-         streamable: url,
-      });
+         const decoded = JSON.parse(Buffer.from(cached.encoded, 'base64').toString('utf8'));
+         return new Track({
+            ...decoded,
+            cached: true,
+            streamable: url,
+         });
+      } catch {
+         return undefined;
+      }
    }
 
-   public async getAudioStream(url: string) {
-      if (url?.includes('.opus')) {
-         const response = await fetch(url).catch((err) => {
-            logger.error('Error fetching audio:', err);
-            return undefined;
-         });
-
-         if (!response || !response.body) {
-            logger.error('No response or response body when fetching audio.');
-            return;
-         }
+   async getAudioStream(url: string) {
+      try {
+         const response = await fetch(url);
+         if (!response.ok || !response.body) throw new Error('Error to fetch audio');
 
          const reader = response.body.getReader();
-         const nodeStream = new Stream.Readable({
+         return new Stream.Readable({
             async read() {
                const { done, value } = await reader.read();
                if (done) this.push(null);
                else this.push(Buffer.from(value));
             },
          });
-
-         return nodeStream;
+      } catch (error: any) {
+         logger.error('Error to fetch audio:', error);
+         return undefined;
       }
-   }
-
-   encode() {
-      
    }
 }

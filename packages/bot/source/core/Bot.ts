@@ -24,6 +24,7 @@ export default class Bot extends Client {
       token: string;
       id: string;
       port: string | number;
+      cache: string
       spotify: {
          id: string;
          secret: string;
@@ -52,7 +53,8 @@ export default class Bot extends Client {
       this.config = {
          token: process.env.DISCORD_TOKEN || '',
          id: process.env.DISCORD_ID || '',
-         port: process.env.PORT || 3000,
+         port: process.env.PORT || 8043,
+         cache: process.env.DISCORD_CACHE_CHANNEL || '',
          spotify: {
             id: process.env.SPOTIFY_ID || '',
             secret: process.env.SPOTIFY_SECRET || '',
