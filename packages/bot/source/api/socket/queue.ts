@@ -81,7 +81,7 @@ module.exports = (io: Server) => {
 
          if (!socket.guild || !socket?.voice) {
             const error = { status: 404, message: 'userNotInVoice' };
-            // socket.emit('status', { type: 'error', ...error });
+            socket.emit('status', { type: 'error', ...error });
             return { error };
          }
 

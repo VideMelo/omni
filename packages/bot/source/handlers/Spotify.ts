@@ -29,19 +29,18 @@ interface SpotifyTrack {
    url: string;
    thumbnail?: string;
    query?: string;
-   album: SpotifyAlbum | { name: string; id: string; url?: string; thumbnail?: string, total: number };
+   album: SpotifyAlbum
 }
 
 interface SpotifyAlbum {
    type?: 'album';
    id: string;
    name: string;
-   artists: Array<{ name: string; id: string }>;
+   artists?: Array<{ name: string; id: string }>;
    total: number;
    thumbnail?: string;
-   query?: string;
    url: string;
-   tracks: SpotifyApi.TrackObjectSimplified[] | SpotifyApi.TrackObjectFull[];
+   tracks?: SpotifyApi.TrackObjectSimplified[] | SpotifyApi.TrackObjectFull[];
    popularity?: number;
 }
 
@@ -50,10 +49,10 @@ interface SpotifyPlaylist {
    id: string;
    name: string;
    artist: string | { name: string; id: string } | undefined;
-   thumbnail?: string;
+   thumbnail: string;
    url: string;
    total: number;
-   tracks: Array<SpotifyTrack>;
+   tracks: SpotifyTrack[];
 }
 
 interface SpotifyArtist {
@@ -72,10 +71,10 @@ type SpotifySearchResultType = 'tracks' | 'albums' | 'playlists' | 'artists';
 interface SpotifySearchResult {
    type: SpotifySearchType | 'topResult' | 'searchResult';
    items: {
-      tracks: SpotifyTrack[]
-      playlists: SpotifyPlaylist[]
-      albums: SpotifyAlbum[]
-      artists: SpotifyArtist[]
+      tracks: SpotifyTrack[];
+      playlists: SpotifyPlaylist[];
+      albums: SpotifyAlbum[];
+      artists: SpotifyArtist[];
    };
 }
 
@@ -150,27 +149,29 @@ export default class Spotify {
             type: 'searchResult',
             items: {
                tracks: result.body.tracks.items.map((item) => this.build(item)) || [],
-               artists: result.body.artists?.items.map((artist) => ({
-                  type: 'artist',
-                  id: artist.id,
-                  name: artist.name,
-                  icon: artist.images?.[0]?.url,
-                  popularity: artist.popularity,
-                  url: artist.external_urls?.spotify,
-                  genres: artist.genres,
-                  followers: artist.followers,
-               })) || [],
-               albums: result.body.albums?.items.map((album) => ({
-                  type: 'album',
-                  id: album.id,
-                  name: album.name,
-                  artists: album.artists.map((artist) => ({ name: artist.name, id: artist.id })),
-                  total: album.total_tracks,
-                  thumbnail: album.images[0]?.url,
-                  url: album.external_urls.spotify,
-                  tracks: [],
-               })) || [],
-               playlists: []
+               artists:
+                  result.body.artists?.items.map((artist) => ({
+                     type: 'artist',
+                     id: artist.id,
+                     name: artist.name,
+                     icon: artist.images?.[0]?.url,
+                     popularity: artist.popularity,
+                     url: artist.external_urls?.spotify,
+                     genres: artist.genres,
+                     followers: artist.followers,
+                  })) || [],
+               albums:
+                  result.body.albums?.items.map((album) => ({
+                     type: 'album',
+                     id: album.id,
+                     name: album.name,
+                     artists: album.artists.map((artist) => ({ name: artist.name, id: artist.id })),
+                     total: album.total_tracks,
+                     thumbnail: album.images[0]?.url,
+                     url: album.external_urls.spotify,
+                     tracks: [],
+                  })) || [],
+               playlists: [],
             },
          };
       }
@@ -281,11 +282,11 @@ export default class Spotify {
    }
 
    async getTopResults(query: string) {
-      const [artists, albums, tracks] = await this.search(query, {
+      const { artists, albums, tracks } = await this.search(query, {
          types: ['artist', 'album', 'track'],
          limit: 15,
       }).then(async (res) => {
-         const tracks = res.items.tracks
+         const tracks = res.items.tracks;
          const albums = await Promise.all(
             (res.items.albums ?? [])
                .filter((item) => item.type == 'album')
@@ -297,7 +298,7 @@ export default class Spotify {
          );
          const artists = res.items.artists;
 
-         return [artists, albums, tracks];
+         return { artists, albums, tracks };
       });
       if (!tracks || !albums || !artists) return null;
 

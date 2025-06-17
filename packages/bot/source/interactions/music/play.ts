@@ -86,7 +86,7 @@ export default class Play extends Interaction {
          if (!search?.items.tracks) return await context.replyErro('No tracks found.');
 
          if (!player.channel) player.setTextChannel(context.channel!.id)
-         const track = await player.play(new Track(search.items.tracks[0])).catch(() => {
+         const track = await player.play(search.items.tracks[0]).catch(() => {
             context.replyErro('An error occurred while playing the track!');
          });
          if (!track) return context.replyErro('An error occurred while playing the track!');

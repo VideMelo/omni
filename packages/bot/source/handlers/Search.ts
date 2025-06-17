@@ -11,11 +11,14 @@ interface SearchOptions {
    limit?: number;
 }
 
-type SearchResultType = 'tracks' | 'albums' | 'playlists' | 'artists';
 interface SearchResult {
    type: ResultType;
    items: {
-      [key in SearchResultType]?: Array<any>;
+      tracks?: Track[],
+      playlists?: any[],
+      albums?: any[],
+      artists?: any[]
+      top?: any
    };
 }
 
@@ -55,7 +58,10 @@ export default class Search {
          if (!result) return;
          return {
             type: 'topResults',
-            items: result,
+            items: {
+               ...result,
+               tracks: result.tracks.map((track) => new Track(track)),
+            },
          };
       } else if (options.type == 'searchUrl') {
          const info = this.infoUrl(query);
