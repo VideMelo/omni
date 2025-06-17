@@ -10,7 +10,7 @@ import Status from '../components/Status.js';
 import axios from 'axios';
 
 export default function Page() {
-   const [status, setStatus]: any = useState(null)
+   const [status, setStatus]: any = useState(null);
 
    const navigate = useNavigate();
    const getAuth = useAuth({
@@ -30,7 +30,10 @@ export default function Page() {
          window.location.reload();
       },
       onError: (data: any) => {
-         setStatus({ type: 'error', message: 'Error while authenticating with Discord, please try again later!'})
+         setStatus({
+            type: 'error',
+            message: 'Error while authenticating with Discord, please try again later!',
+         });
       },
    });
 
@@ -59,21 +62,24 @@ export default function Page() {
    }, []);
 
    return (
-      <main className="h-screen w-full min-w-0 flex flex-col justify-center items-center">
-         <Scout className="w-16 h-16 shrink-0 -mt-8 mb-6" />
-         <h1 className="text-3xl font-bold mb-2 text-center relative z-10 mt-12 opacity-100 will-change-transform transform-none">
-            One account, a world of music!
-         </h1>
-         <p className="text-lg mb-8 opacity-70 w-full whitespace-nowrap text-center font-light relative z-10 will-change-transform">
-            Connect with your friends and explore new tunes together.
-         </p>
-         <button
-            className="font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-full sm:w-auto bg-[#5865F2] hover:bg-[#4752C4] text-white text-sm sm:text-base p-7 flex items-center justify-center space-x-2 rounded-2xl"
-            onClick={() => getAuth()}
-         >
-            <Discord className="w-7 h-7 flex-shrink-0" />
-            <span className="whitespace-nowrap text-xl">Sign in with Discord</span>
-         </button>
+      <main className="h-screen w-full min-w-0 flex flex-col justify-center items-center bg-[#91D7E0]">
+         <Scout className="w-32 h-32 shrink-0 mt-12 mb-12" />
+         <div className="relative overflow-hidden w-full h-full flex flex-col items-center px-9">
+            <h1 className="text-3xl font-bold mb-2 text-center relative z-10 mt-32 opacity-100 will-change-transform transform-none">
+               One account, a world of music!
+            </h1>
+            <p className="text-lg mb-24 opacity-70 w-full text-center font-light relative z-10 will-change-transform">
+               Connect with your friends and explore new tunes together.
+            </p>
+            <button
+               className="z-10 font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 bg-[#5865F2] hover:bg-[#4752C4] w-full sm:w-auto text-white text-sm p-7 px-10 flex items-center justify-center space-x-2 rounded-2xl"
+               onClick={() => getAuth()}
+            >
+               <Discord className="w-7 h-7 flex-shrink-0" />
+               <span className="whitespace-nowrap text-xl">Sign in with Discord</span>
+            </button>
+            <div className="w-[calc(100vw*2)] left-1/2 -translate-x-1/2 top-0 rounded-t-[150%] h-full bg-black absolute"></div>
+         </div>
          <Status
             status={status}
             styles="absolute right-1/2 left-1/2 bottom-6"
