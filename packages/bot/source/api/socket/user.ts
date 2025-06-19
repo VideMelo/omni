@@ -16,7 +16,6 @@ export default (io: Server): void => {
 
       socket.on('user:set', async (token: string, callback?: (user: User | null) => void) => {
          try {
-            console.log(token)
             if (socket?.user || !token) return;
             const response = await fetch('https://discord.com/api/v10/users/@me', {
                headers: {

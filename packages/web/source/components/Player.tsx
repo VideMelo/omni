@@ -104,7 +104,6 @@ function Player() {
    }
 
    function handlePalette(image: any) {
-      console.log(image);
       if (!image) return;
       function calculateResultingColor(upperColor: any, lowerColor: any, alpha: any) {
          function calculateChannel(upperChannel: any, lowerChannel: any, alpha: any) {

@@ -50,7 +50,7 @@ export default class YouTube {
 
          stream.once('error', (err) => {
             try {
-               const fallback = this.#getAudioStream(url);
+               const fallback = this.#getAudioStream(url); // need python for this :/
                resolve(fallback);
             } catch (fallbackErr) {
                reject(fallbackErr);

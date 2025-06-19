@@ -1,9 +1,9 @@
+import { Collection } from 'discord.js';
 import Bot from '../core/Bot.js';
 import { Track } from './Media.js';
 import Spotify from './Spotify.js';
 import YouTube from './Youtube.js';
 
-type SearchResultType = 'track' | 'album' | 'playlist' | 'artist' | 'search' | 'top';
 type SearchType = 'track' | 'top' | 'url';
 
 interface SearchOptions {
@@ -12,7 +12,7 @@ interface SearchOptions {
 }
 
 interface SearchResult {
-   type: SearchResultType;
+   type: 'track' | 'album' | 'playlist' | 'artist' | 'search' | 'top';
    items: {
       tracks?: Track[];
       playlists?: any[];
@@ -26,6 +26,7 @@ export default class Search {
    public spotify: Spotify;
    public youtube: YouTube;
    private client: Bot;
+   public cache: Collection<string, SearchResult>;
    constructor(client: Bot) {
       this.spotify = new Spotify({
          id: client.config.spotify.id,
@@ -34,39 +35,51 @@ export default class Search {
 
       this.youtube = new YouTube();
       this.client = client;
+      this.cache = new Collection();
    }
 
    async resolve(query: string, options: SearchOptions = { limit: 5 }): Promise<SearchResult | undefined> {
       options.type ??= this.idealSearchType(query);
       if (!options.type) return;
 
+      const cache = this.incache(query);
+      if (cache?.type == options.type) return cache;
+
       switch (options.type) {
-         case 'track':
+         case 'track': {
             const trackResult = await this.spotify.search(query, {
                types: ['track'],
                limit: options.limit,
             });
-            return {
+            let search: SearchResult = {
                type: 'track',
                items: { tracks: trackResult.items.tracks.map((t) => new Track(t)) },
             };
-         case 'top':
+            this.encache(query, search);
+            return search;
+         }
+         case 'top': {
             const topResult = await this.spotify.getTopResults(query);
             if (!topResult) return;
-            return {
+            let search: SearchResult = {
                type: 'top',
                items: { ...topResult, tracks: topResult.tracks.map((t) => new Track(t)) },
             };
+            this.encache(query, search);
+            return search;
+         }
          case 'url': {
             const info = this.infoUrl(query);
             if (!info) return;
 
             if (info.stream === 'spotify') {
                const result = await this.spotify.search(query);
-               return {
+               let search: SearchResult = {
                   type: 'search',
-                  items: result.items,
+                  items: { ...result.items, tracks: result.items.tracks.map((t) => new Track(t)) },
                };
+               this.encache(query, search);
+               return search;
             }
 
             if (info.stream === 'youtube') {
@@ -79,6 +92,24 @@ export default class Search {
             return;
          }
       }
+   }
+
+   encache(key: string, search: SearchResult) {
+      this.cache.set(key.toLowerCase(), search);
+
+      setTimeout(() => {
+         this.cache.delete(key);
+      }, 12 * 60 * 60 * 1000);
+   }
+
+   incache(query: string) {
+      const cache = this.cache.get(query.toLowerCase());
+      return cache
+   }
+
+   getcache(id: string) {
+      const flattened = Array.from(this.cache.values()).flatMap((res) => [...(res.items.tracks ?? [])]) as Track[]
+      return flattened.find((item) => item.id == id)
    }
 
    idealSearchType(query: string): SearchType | undefined {

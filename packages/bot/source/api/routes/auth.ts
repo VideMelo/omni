@@ -6,7 +6,7 @@ const route = Router();
 route.get('/auth', async (req, res) => {
    const code = req.query.code as string | undefined;
    const state = req.query.state as string | undefined;
-   console.log(code, state)
+   
    if (!code || !state) {
       res.status(400).send({ error: 'Invalid request!' });
       return;
