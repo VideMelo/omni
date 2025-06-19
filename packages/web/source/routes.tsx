@@ -11,6 +11,7 @@ import Queue from './pages/Queue.jsx';
 
 import socket from './services/socket.js';
 import { useAuth } from './contexts/AuthContext.jsx';
+import Scout from './assets/icons/Scout.js';
 
 function RedirectRoute() {
    const navigate = useNavigate();
@@ -29,7 +30,47 @@ function RedirectRoute() {
 }
 
 const Loading = () => {
-   return 'loading...';
+   const loginPhrases = [
+      'Tuning instruments for your next hit',
+      'Syncing bass with your heartbeat',
+      'Loading melodies worth feeling',
+      'Warming up the speakers',
+      'Stacking beats one brick at a time',
+      'Decoding your vibe frequency',
+      'Compiling perfect chords',
+      'Finding rhythm in the chaos',
+      'Calibrating tempo for your session',
+      'Amplifying your soul soundtrack',
+      'Mixing tracks behind the scenes',
+      'Spinning vinyl in the matrix',
+      'Charging up your next chorus',
+      'Sampling good vibes only',
+      'Preloading emotional resonance',
+      'Queuing up your next mood',
+      'Plotting harmonic convergence',
+      'Fine-tuning the groove engine',
+      'Loading the heartbeat of sound',
+      'Orchestrating your login anthem',
+   ];
+   const randomPhrase = () => loginPhrases[Math.floor(Math.random() * loginPhrases.length)];
+   const [phrase, setPhrase] = useState(randomPhrase());
+
+   useEffect(() => {
+      const interval = setInterval(() => {
+         setPhrase(randomPhrase());
+      }, 5000);
+      return () => clearInterval(interval);
+   }, []);
+
+   return (
+      <main className="flex flex-col gap-3 items-center justify-center h-screen w-full">
+         <span className="animate-bounce">
+            <Scout className="w-20 h-20 rounded-full animate-spin" />
+         </span>
+         <span className="font-medium text-lg">Loading</span>
+         <span>{phrase}...</span>
+      </main>
+   );
 };
 
 const Routers = () => {
@@ -38,8 +79,8 @@ const Routers = () => {
 
    const token = Cookies.get('auth-token');
 
-   let [isAuth, setIsAuth] = useState(!!user.id);
-   let [isLoading, setIsLoading] = useState(!!token && !isAuth);
+   let [isAuth, setIsAuth] = useState(false);
+   let [isLoading, setIsLoading] = useState(true);
 
    useEffect(() => {
       if (token) {
