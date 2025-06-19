@@ -12,6 +12,13 @@ import axios from 'axios';
 export default function Page() {
    const [status, setStatus]: any = useState(null);
 
+   function setAuthError() {
+      setStatus({
+         type: 'error',
+         message: 'Error while authenticating with Discord, please try again later!',
+      });
+   }
+
    const navigate = useNavigate();
    const getAuth = useAuth({
       redirectUri: `${window.location.origin}/redirect`,
@@ -26,6 +33,8 @@ export default function Page() {
                   params: { code: data.code, state: data.state },
                })
                .then((res: any) => {
+                  if (res.data?.token) return setAuthError();
+
                   Cookies.set('auth-token', res.data.token, {
                      expires: new Date(Date.now() + res.data.expires * 1000),
                      path: '/',
@@ -34,20 +43,10 @@ export default function Page() {
                   navigate('/');
                   window.location.reload();
                })
-               .catch(() => {
-                  setStatus({
-                     type: 'error',
-                     message: 'Error while authenticating with Discord, please try again later!',
-                  });
-               });
+               .catch(() => setAuthError());
          }
       },
-      onError: (data: any) => {
-         setStatus({
-            type: 'error',
-            message: 'Error while authenticating with Discord, please try again later!',
-         });
-      },
+      onError: (data: any) => setAuthError(),
    });
 
    return (
