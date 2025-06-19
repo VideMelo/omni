@@ -33,7 +33,7 @@ export default function Page() {
                   params: { code: data.code, state: data.state },
                })
                .then((res: any) => {
-                  if (res.data?.token) return setAuthError();
+                  if (!res.data?.token) return setAuthError();
 
                   Cookies.set('auth-token', res.data.token, {
                      expires: new Date(Date.now() + res.data.expires * 1000),
