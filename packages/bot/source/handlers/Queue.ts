@@ -89,8 +89,7 @@ export default class Queue {
    clear() {
       this.tracks.clear();
       const current = this.player.current;
-      if (this.player.playing && current)
-         this.tracks.set(current.id, { index: 0, ogidx: 0, ...current });
+      if (this.player.playing && current) this.tracks.set(current.id, { index: 0, ogidx: 0, ...current });
       this.player.socket();
    }
 

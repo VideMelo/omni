@@ -29,7 +29,7 @@ interface SpotifyTrack {
    url: string;
    thumbnail?: string;
    query?: string;
-   album: SpotifyAlbum
+   album: SpotifyAlbum;
 }
 
 interface SpotifyAlbum {
@@ -102,8 +102,7 @@ export default class Spotify {
          });
 
       this.urls = {
-         pattern:
-            /https?:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(track|album|playlist)\/([a-zA-Z0-9]{22})/,
+         pattern: /https?:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(track|album|playlist)\/([a-zA-Z0-9]{22})/,
       };
    }
 
@@ -114,10 +113,11 @@ export default class Spotify {
       return data.body['access_token'];
    }
 
-   async request<T>(apiCall: () => Promise<T>, retries = 5): Promise<T> {
+   async request<T>(call: () => Promise<T>, retries = 5): Promise<T> {
       for (let i = 0; i < retries; i++) {
          try {
-            return await apiCall();
+            if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
+            return await call();
          } catch (err: any) {
             if (err.statusCode === 429) {
                const retryAfter = parseInt(err.headers?.['retry-after'], 10) || 5;
@@ -131,11 +131,7 @@ export default class Spotify {
       throw new Error('Número máximo de tentativas atingido.');
    }
 
-   async search(
-      query: string,
-      options: SpotifySearchOptions = { types: ['track'] }
-   ): Promise<SpotifySearchResult> {
-      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
+   async search(query: string, options: SpotifySearchOptions = { types: ['track'] }): Promise<SpotifySearchResult> {
 
       if (this.urls.pattern.test(query)) {
          return await this.resolve(query);
@@ -216,13 +212,9 @@ export default class Spotify {
    }
 
    async getPlaylist(id: string): Promise<SpotifyPlaylist | undefined> {
-      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
-
       let playlist;
       try {
-         playlist = await this.request(() =>
-            this.api.getPlaylist(id).then((playlist) => playlist.body)
-         );
+         playlist = await this.request(() => this.api.getPlaylist(id).then((playlist) => playlist.body));
       } catch (err) {
          console.error('não foi possivel buscar', id, err);
          return;
@@ -235,12 +227,12 @@ export default class Spotify {
 
       if (totalTracks > 100) {
          for (let offset = 100; offset < totalTracks; offset += 100) {
-            const tracksPage = await this.request(() =>
-               this.api.getPlaylistTracks(id, { offset, limit: 100 }).then((res) => res.body.items)
-            ).catch((error: any) => {
-               Logger.error('Erro ao buscar faixas:', error);
-               return [];
-            });
+            const tracksPage = await this.request(() => this.api.getPlaylistTracks(id, { offset, limit: 100 }).then((res) => res.body.items)).catch(
+               (error: any) => {
+                  Logger.error('Erro ao buscar faixas:', error);
+                  return [];
+               }
+            );
 
             allItems.push(...tracksPage);
          }
@@ -253,20 +245,16 @@ export default class Spotify {
          thumbnail: playlist.images[0]?.url,
          url: playlist.external_urls.spotify,
          total: totalTracks,
-         tracks: allItems
-            .map((item) => (item.track ? this.build(item.track) : undefined))
-            .filter(Boolean) as SpotifyTrack[],
+         tracks: allItems.map((item) => (item.track ? this.build(item.track) : undefined)).filter(Boolean) as SpotifyTrack[],
       };
    }
 
    async getTrack(id: string): Promise<SpotifyTrack | undefined> {
-      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
       const track = await this.request(() => this.api.getTrack(id).then((track) => track.body));
       return this.build(track);
    }
 
    async getAlbum(id: string): Promise<SpotifyAlbum | undefined> {
-      if (this.expiration < new Date().getTime() / 1000) await this.refreshAccessToken();
       const album = await this.request(() => this.api.getAlbum(id).then((album) => album.body));
 
       return {
@@ -320,15 +308,11 @@ export default class Spotify {
       });
 
       if (mathes.length > 1) {
-         result = mathes.sort(
-            (a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]
-         );
+         result = mathes.sort((a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]);
       } else if (mathes.length == 1) {
          result = mathes;
       } else {
-         result = result.sort(
-            (a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]
-         );
+         result = result.sort((a, b) => b.popularity * priority[b.type] - a.popularity * priority[a.type]);
       }
 
       return {
