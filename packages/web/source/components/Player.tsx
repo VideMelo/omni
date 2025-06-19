@@ -21,100 +21,64 @@ import Plus from '../assets/icons/Plus.js';
 import Headphone from '../assets/icons/Headphone.js';
 import List from '../assets/icons/List.js';
 import Lyrics from '../assets/icons/Lyrics.js';
+import { usePlayer } from '../contexts/PlayerContext.js';
 
-function Player({ metadata, setMetadata }: any) {
+function Player() {
    const location = useLocation();
-
-   const [queue, setQueue]: any = useState([]);
-   const [track, setTrack]: any = useState(null);
-   const [cover, setCover]: any = useState(null);
-
-   const [palette, setPalette]: any = useState(null);
-   const [timer, setTimer]: any = useState(0);
-   const [playing, setPlaying]: any = useState(false);
-   const [paused, setPaused]: any = useState(false);
-   const [repeat, setRepeat]: any = useState('off');
-   const [shuffled, setShuffled]: any = useState(false);
-   const [volume, setVolume]: any = useState(100);
-
-   const [player, setPlayer]: any = useState(null);
+   const { state, dispatch } = usePlayer();
+   const { track, playing, paused, timer, palette, cover, repeat, shuffled, volume, queue, voice } = state;
 
    useEffect(() => {
       if (!playing) return;
       const interval = setInterval(() => {
-         setTimer((prev: any) => {
-            if (paused) return prev;
-            if (prev >= track.duration / 1000) {
-               clearInterval(interval);
-               setPlaying(false);
-               return track.duration / 1000;
-            }
-            return prev + 1;
-         });
+         if (!paused) {
+            dispatch({ type: 'SET_TIMER', payload: timer + 1 });
+         }
       }, 1000);
       return () => clearInterval(interval);
    }, [playing, paused, track, timer]);
 
    useEffect(() => {
-      setMetadata({ queue, player, palette, track, timer, cover });
-   }, [queue, player, palette, track, timer]);
-
-   useEffect(() => {
       if (!track) return;
-      fetchTrackCover(track);
+      fetchTrackAnimatedCover(track);
    }, [track]);
 
    useEffect(() => {
       socket.emit('voice:sync', updatePlayer);
 
-      socket.on('user:voice.update', () => {
-         socket.emit('voice:sync', updatePlayer);
-      });
-
-      socket.on('bot:voice.update', () => {
-         socket.emit('voice:sync', updatePlayer);
-      });
-
+      socket.on('user:voice.update', () => socket.emit('voice:sync', updatePlayer));
+      socket.on('bot:voice.update', () => socket.emit('voice:sync', updatePlayer));
       socket.on('player:update', updatePlayer);
-   }, []);
 
-   function setInitialState() {
-      setQueue([]);
-      setTrack(null);
-      setCover(null);
-      setPlayer(null);
-      setPlaying(false);
-      setPaused(false);
-      setVolume(100);
-      setRepeat('off');
-      setTimer(0);
-      setPalette(null);
-   }
+      return () => {
+         socket.off('user:voice.update');
+         socket.off('bot:voice.update');
+         socket.off('player:update');
+      };
+   }, []);
 
    function updatePlayer() {
       socket.emit('queue:get', (data: any) => {
-         if (!data) return setInitialState();
-         console.log('queue:get', data);
-         setQueue(data.list);
-         setTrack({ ...data.current, duration: data.current?.duration | 0 });
-         setCover(data.current?.thumbnail);
-         setRepeat(data.repeat);
-         setShuffled(data.shuffled);
+         if (!data) return dispatch({ type: 'RESET' });
+         dispatch({ type: 'SET_QUEUE', payload: data.list });
+         dispatch({ type: 'SET_TRACK', payload: { ...data.current, duration: data.current?.duration || 0 } });
+         dispatch({ type: 'SET_COVER', payload: data.current?.thumbnail });
+         dispatch({ type: 'SET_REPEAT', payload: data.repeat });
+         dispatch({ type: 'SET_SHUFFLED', payload: data.shuffled });
          handlePalette(data.current?.thumbnail);
       });
 
       socket.emit('player:get', (data: any) => {
-         if (!data) return setInitialState();
-         console.log('player:get', data);
-         setPlayer(data);
-         setPlaying(data.playing);
-         setPaused(data.paused);
-         setVolume(data.volume);
-         setTimer(data.position / 1000);
+         if (!data) return dispatch({ type: 'RESET' });
+         dispatch({ type: 'SET_PLAYING', payload: data.playing });
+         dispatch({ type: 'SET_PAUSED', payload: data.paused });
+         dispatch({ type: 'SET_VOLUME', payload: data.volume });
+         dispatch({ type: 'SET_TIMER', payload: data.position / 1000 });
+         dispatch({ type: 'SET_VOICE', payload: data.metadata?.voice.name });
       });
    }
 
-   async function fetchTrackCover(track: any) {
+   async function fetchTrackAnimatedCover(track: any) {
       try {
          if (!track.album || !track.artist) return;
          const response = await axios.get('https://ws.audioscrobbler.com/2.0/', {
@@ -132,7 +96,7 @@ function Player({ metadata, setMetadata }: any) {
             const fetch = await axios.head(image);
             const contentType = fetch.headers['content-type'];
 
-            if (contentType === 'image/gif') setCover(image);
+            if (contentType === 'image/gif') dispatch({ type: 'SET_COVER', payload: image });
          }
       } catch (error: any) {
          console.error('Error fetching album:', error.message);
@@ -140,6 +104,7 @@ function Player({ metadata, setMetadata }: any) {
    }
 
    function handlePalette(image: any) {
+      console.log(image);
       if (!image) return;
       function calculateResultingColor(upperColor: any, lowerColor: any, alpha: any) {
          function calculateChannel(upperChannel: any, lowerChannel: any, alpha: any) {
@@ -165,11 +130,13 @@ function Player({ metadata, setMetadata }: any) {
                   return hex.length === 1 ? '0' + hex : hex;
                })
                .join('');
-         setPalette({
-            ...palette,
-            alpha,
+         dispatch({
+            type: 'SET_PALETTE',
+            payload: {
+               ...palette,
+               alpha,
+            },
          });
-         console.log(palette);
       });
    }
 
@@ -177,7 +144,7 @@ function Player({ metadata, setMetadata }: any) {
       socket.emit('player:play', item);
    }
 
-   if (!track || !palette || !player) return null;
+   if (!state || !track || !palette || !cover) return null;
    return (
       <div className={`flex min-w-[400px] max-w-[400px] flex-col gap-3 h-full`}>
          <div
@@ -185,9 +152,7 @@ function Player({ metadata, setMetadata }: any) {
             style={{ backgroundColor: palette.alpha }}
          >
             <div
-               className={`relative w-[400px] h-[400px] duration-700 transi ease-out delay-75 ${
-                  location.pathname == '/queue' ? '-mt-[730px]' : ''
-               }`}
+               className={`relative w-[400px] h-[400px] duration-700 transi ease-out delay-75 ${location.pathname == '/queue' ? '-mt-[730px]' : ''}`}
             >
                <img src={cover} className="w-full h-full object-cover rounded-t-3xl" />
                <div
@@ -198,24 +163,12 @@ function Player({ metadata, setMetadata }: any) {
                   }}
                ></div>
             </div>
-            <div
-               className={`flex flex-col w-full gap-5 px-6 z-[1] -mt-[25px] ${
-                  !playing ? 'cursor-wait' : ''
-               }`}
-            >
-               <div
-                  className={`flex flex-col gap-3 ${
-                     !playing ? 'animate-pulse pointer-events-none' : ''
-                  }`}
-               >
+            <div className={`flex flex-col w-full gap-5 px-6 z-[1] -mt-[25px] ${!playing ? 'cursor-wait' : ''}`}>
+               <div className={`flex flex-col gap-3 ${!playing ? 'animate-pulse pointer-events-none' : ''}`}>
                   <div className="flex w-full px-1 items-center justify-between">
                      <div className="w-[85%]">
-                        <div className="font-semibold text-lg font-poppins truncate">
-                           {track.name}
-                        </div>
-                        <div className="font-normal text-lg font-poppins text-[#B3B3B3]">
-                           {track.artist.name}
-                        </div>
+                        <div className="font-semibold text-lg font-poppins truncate">{track.name}</div>
+                        <div className="font-normal text-lg font-poppins text-[#B3B3B3]">{track.artist.name}</div>
                      </div>
                      <button onClick={() => socket.emit('')}>
                         <Plus className="w-6 h-6" />
@@ -225,19 +178,15 @@ function Player({ metadata, setMetadata }: any) {
                      value={timer}
                      duration={track.duration / 1000}
                      onChange={(value: any) => {
-                        setTimer(value.time);
+                        dispatch({ type: 'SET_TIMER', payload: value.time });
                      }}
                      onCommit={(value: any) => {
-                        setTimer(value.time);
-                        socket.emit('player:seek', value.time)
+                        dispatch({ type: 'SET_TIMER', payload: value.time });
+                        socket.emit('player:seek', value.time);
                      }}
                   />
                </div>
-               <div
-                  className={`flex w-full justify-center gap-10 items-center ${
-                     !playing ? 'animate-pulse pointer-events-none' : ''
-                  }`}
-               >
+               <div className={`flex w-full justify-center gap-10 items-center ${!playing ? 'animate-pulse pointer-events-none' : ''}`}>
                   <button onClick={() => socket.emit('player:previous')}>
                      <Previous className="w-[50px] h-[50px] fill-white" />
                   </button>
@@ -255,11 +204,7 @@ function Player({ metadata, setMetadata }: any) {
                   </button>
                </div>
                <div className="flex w-full justify-center gap-2 items-center">
-                  <button
-                     onClick={() =>
-                        socket.emit('player:volume', volume >= 10 ? volume - 10 : volume)
-                     }
-                  >
+                  <button onClick={() => socket.emit('player:volume', volume >= 10 ? volume - 10 : volume)}>
                      <VolumeLow className="w-[30px] h-[30px] fill-white" />
                   </button>
                   <Slider
@@ -269,11 +214,7 @@ function Player({ metadata, setMetadata }: any) {
                      onCommit={(value: any) => socket.emit('player:volume', value.time)}
                      showTimers={false}
                   />
-                  <button
-                     onClick={() =>
-                        socket.emit('player:volume', volume <= 90 ? volume + 10 : volume)
-                     }
-                  >
+                  <button onClick={() => socket.emit('player:volume', volume <= 90 ? volume + 10 : volume)}>
                      <VolumeHigh className="w-[30px] h-[30px] fill-white" />
                   </button>
                </div>
@@ -281,62 +222,35 @@ function Player({ metadata, setMetadata }: any) {
                   className="flax w-full rounded-[20px] px-6 py-4 justify-center gap-10 items-center"
                   style={{ backgroundColor: palette.LightVibrant.hex }}
                >
-                  <div className="font-medium uppercase text-sm text-black text-opacity-50">
-                     Playing From Party
-                  </div>
+                  <div className="font-medium uppercase text-sm text-black text-opacity-50">Playing From Party</div>
                   <div className="flex items-center gap-2">
                      <Headphone className="w-6 h-6 text-black text-opacity-80" />
-                     <div className="font-medium text-lg text-black text-opacity-80">
-                        {player.metadata.voice.name}
-                     </div>
+                     <div className="font-medium text-lg text-black text-opacity-80">{voice}</div>
                   </div>
                </div>
             </div>
             <div className="mt-8 w-full flex flex-1 p-4 flex-col bg-black bg-opacity-50 rounded-[20px]">
                <div className="flex w-full justify-between px-6 py-2">
                   <div className="flex gap-4 ">
-                     <button
-                        className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`}
-                        onClick={() => {}}
-                     >
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => {}}>
                         <Lyrics className="w-6 h-6 fill-white" />
                      </button>
                      <button
                         className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`}
-                        onClick={() =>
-                           socket.emit(
-                              'queue:repeat',
-                              repeat === 'off' ? 'queue' : repeat === 'queue' ? 'track' : 'off'
-                           )
-                        }
+                        onClick={() => socket.emit('queue:repeat', repeat === 'off' ? 'queue' : repeat === 'queue' ? 'track' : 'off')}
                      >
                         {repeat == 'track' ? (
-                           <RepeatOnce
-                              className="w-6 h-6 fill-white"
-                              style={{ fill: palette.Vibrant.hex }}
-                           />
+                           <RepeatOnce className="w-6 h-6 fill-white" style={{ fill: palette.Vibrant.hex }} />
                         ) : (
-                           <Repeat
-                              className={`w-6 h-6`}
-                              style={{ fill: repeat !== 'off' ? palette.Vibrant.hex : 'white' }}
-                           />
+                           <Repeat className={`w-6 h-6`} style={{ fill: repeat !== 'off' ? palette.Vibrant.hex : 'white' }} />
                         )}
                      </button>
                   </div>
                   <div className="flex gap-4">
-                     <button
-                        className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`}
-                        onClick={() => socket.emit('queue:shuffle', !shuffled)}
-                     >
-                        <Shuffle
-                           className="w-6 h-6"
-                           style={{ fill: shuffled ? palette.Vibrant.hex : 'white' }}
-                        />
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => socket.emit('queue:shuffle', !shuffled)}>
+                        <Shuffle className="w-6 h-6" style={{ fill: shuffled ? palette.Vibrant.hex : 'white' }} />
                      </button>
-                     <button
-                        className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`}
-                        onClick={() => {}}
-                     >
+                     <button className={`p-2 rounded-md hover:bg-white hover:bg-opacity-10`} onClick={() => {}}>
                         <List className="w-6 h-6 fill-white" />
                      </button>
                   </div>
@@ -352,12 +266,8 @@ function Player({ metadata, setMetadata }: any) {
                      >
                         <img src={item.thumbnail} className="h-[50px] w-[50px] rounded-md" />
                         <div className="w-full">
-                           <div className="font-medium text-sm font-poppins text-white w-1/2 truncate">
-                              {item.name}
-                           </div>
-                           <div className="font-normal text-xs font-poppins text-[#B3B3B3]">
-                              {item.artist.name}
-                           </div>
+                           <div className="font-medium text-sm font-poppins text-white w-1/2 truncate">{item.name}</div>
+                           <div className="font-normal text-xs font-poppins text-[#B3B3B3]">{item.artist.name}</div>
                         </div>
                      </div>
                   ))}

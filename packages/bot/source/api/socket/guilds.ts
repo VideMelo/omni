@@ -104,9 +104,7 @@ export default (io: Server): void => {
                respond: status,
             });
 
-            logger.info(
-               `user: ${socket.user} with ${socket.id} voice:sync, guild: ${socket.guild} in voice: ${socket.voice}`
-            );
+            logger.info(`user: ${socket.user} with ${socket.id} voice:sync, guild: ${socket.guild} in voice: ${socket.voice}`);
 
             if (typeof callback === 'function') return callback();
          }

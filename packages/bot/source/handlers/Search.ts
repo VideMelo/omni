@@ -3,29 +3,29 @@ import { Track } from './Media.js';
 import Spotify from './Spotify.js';
 import YouTube from './Youtube.js';
 
-type QueryType = 'searchTrack' | 'topResult' | 'searchUrl' | 'invalidQuery';
-type ResultType = 'track' | 'album' | 'playlist' | 'artist' | 'searchResult' | 'topResults';
+type SearchResultType = 'track' | 'album' | 'playlist' | 'artist' | 'search' | 'top';
+type SearchType = 'track' | 'top' | 'url';
 
 interface SearchOptions {
-   type?: QueryType;
+   type?: SearchType;
    limit?: number;
 }
 
 interface SearchResult {
-   type: ResultType;
+   type: SearchResultType;
    items: {
-      tracks?: Track[],
-      playlists?: any[],
-      albums?: any[],
-      artists?: any[]
-      top?: any
+      tracks?: Track[];
+      playlists?: any[];
+      albums?: any[];
+      artists?: any[];
+      top?: any;
    };
 }
 
 export default class Search {
-   spotify: Spotify;
-   youtube: YouTube;
-   client: Bot;
+   public spotify: Spotify;
+   public youtube: YouTube;
+   private client: Bot;
    constructor(client: Bot) {
       this.spotify = new Spotify({
          id: client.config.spotify.id,
@@ -36,69 +36,64 @@ export default class Search {
       this.client = client;
    }
 
-   async resolve(
-      query: string,
-      options: SearchOptions = { limit: 5 }
-   ): Promise<SearchResult | undefined> {
-      if (!options?.type) options.type = this.idealQueryType(query);
-      if (options.type == 'invalidQuery') return;
+   async resolve(query: string, options: SearchOptions = { limit: 5 }): Promise<SearchResult | undefined> {
+      options.type ??= this.idealSearchType(query);
+      if (!options.type) return;
 
-      if (options.type == 'searchTrack') {
-         const result = await this.spotify.search(query, {
-            types: ['track'],
-            limit: options.limit,
-         });
+      switch (options.type) {
+         case 'track':
+            const trackResult = await this.spotify.search(query, {
+               types: ['track'],
+               limit: options.limit,
+            });
+            return {
+               type: 'track',
+               items: { tracks: trackResult.items.tracks.map((t) => new Track(t)) },
+            };
+         case 'top':
+            const topResult = await this.spotify.getTopResults(query);
+            if (!topResult) return;
+            return {
+               type: 'top',
+               items: { ...topResult, tracks: topResult.tracks.map((t) => new Track(t)) },
+            };
+         case 'url': {
+            const info = this.infoUrl(query);
+            if (!info) return;
 
-         return {
-            type: 'searchResult',
-            items: { tracks: result.items.tracks.map((track) => new Track(track)) },
-         };
-      } else if (options.type == 'topResult') {
-         const result = await this.spotify.getTopResults(query);
-         if (!result) return;
-         return {
-            type: 'topResults',
-            items: {
-               ...result,
-               tracks: result.tracks.map((track) => new Track(track)),
-            },
-         };
-      } else if (options.type == 'searchUrl') {
-         const info = this.infoUrl(query);
-         if (!info) return;
-         let result;
-         if (info.stream === 'spotify') {
-            result = await this.spotify.search(query);
-            return {
-               type: 'searchResult',
-               items: result.items,
-            };
-         } else if (info.stream === 'youtube') {
-            result = await this.youtube.search(query);
-            return {
-               type: 'searchResult',
-               items: { tracks: [result] },
-            };
-         } else {
+            if (info.stream === 'spotify') {
+               const result = await this.spotify.search(query);
+               return {
+                  type: 'search',
+                  items: result.items,
+               };
+            }
+
+            if (info.stream === 'youtube') {
+               const result = await this.youtube.search(query);
+               return {
+                  type: 'search',
+                  items: { tracks: [new Track(result)] },
+               };
+            }
             return;
          }
       }
    }
 
-   idealQueryType(query: string): QueryType {
-      if (typeof query != 'string') return 'invalidQuery';
+   idealSearchType(query: string): SearchType | undefined {
+      if (typeof query != 'string') return;
       if (this.isUrl(query)) {
          const info = this.infoUrl(query);
-         if (!info) return 'invalidQuery';
-         if (info.stream == 'spotify') return 'searchUrl';
-         else if (info.stream == 'youtube') return 'searchUrl';
-         else return 'invalidQuery';
-      } else return 'searchTrack';
+         if (!info) return;
+         if (info.stream == 'spotify') return 'url';
+         else if (info.stream == 'youtube') return 'url';
+         else return;
+      } else return 'track';
    }
 
    isUrl(url: string): boolean {
-      const isUrl =
-         /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/g;
+      const isUrl = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/g;
 
       if (!url.match(isUrl)) return false;
       return true;

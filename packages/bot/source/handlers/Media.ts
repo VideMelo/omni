@@ -92,16 +92,7 @@ export class Track implements Track {
 }
 
 export class TrackMetadata implements TrackMetadata {
-   constructor({
-      source,
-      id,
-      url,
-      name,
-      duration,
-      explicit = false,
-      thumbnail,
-      artist,
-   }: TrackMetadata) {
+   constructor({ source, id, url, name, duration, explicit = false, thumbnail, artist }: TrackMetadata) {
       this.source = source;
       this.id = id;
       this.url = url;
@@ -119,10 +110,5 @@ export class TrackMetadata implements TrackMetadata {
 }
 
 export class Playlist {
-   constructor(
-      public id: string,
-      public title: string,
-      public description: string,
-      public tracks: Track[]
-   ) {}
+   constructor(public id: string, public title: string, public description: string, public tracks: Track[]) {}
 }

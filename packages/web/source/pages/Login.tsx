@@ -20,14 +20,27 @@ export default function Page() {
       scopes: ['identify', 'guilds'],
 
       onSuccess: (data: any) => {
-         console.log(data);
-         Cookies.set('auth-token', data.token, {
-            expires: new Date(Date.now() + data.expires * 1000),
-            path: '/',
-            secure: false,
-         });
-         navigate('/');
-         window.location.reload();
+         if (data.code) {
+            axios
+               .get(`${window.location.origin}/api/auth`, {
+                  params: { code: data.code, state: data.state },
+               })
+               .then((res: any) => {
+                  Cookies.set('auth-token', res.data.token, {
+                     expires: new Date(Date.now() + res.data.expires * 1000),
+                     path: '/',
+                     secure: false,
+                  });
+                  navigate('/');
+                  window.location.reload();
+               })
+               .catch(() => {
+                  setStatus({
+                     type: 'error',
+                     message: 'Error while authenticating with Discord, please try again later!',
+                  });
+               });
+         }
       },
       onError: (data: any) => {
          setStatus({
@@ -36,30 +49,6 @@ export default function Page() {
          });
       },
    });
-
-   const location = useLocation();
-   useEffect(() => {
-      const query = new URLSearchParams(location.search);
-      const code = query.get('code');
-      const state = query.get('state');
-
-      if (code) {
-         axios
-            .get(`${window.location.origin}/api/auth`, {
-               params: {
-                  code,
-                  state,
-               },
-            })
-            .then((res) => {
-               console.log(res);
-               window.close();
-               window.opener.postMessage(res.data, '*');
-               window.location.href = '/';
-            })
-            .catch((err) => console.log(err));
-      }
-   }, []);
 
    return (
       <main className="h-screen w-full min-w-0 flex flex-col justify-center items-center bg-[#91D7E0]">
@@ -78,14 +67,9 @@ export default function Page() {
                <Discord className="w-7 h-7 flex-shrink-0" />
                <span className="whitespace-nowrap text-xl">Sign in with Discord</span>
             </button>
-            <div className="w-[calc(100vw*2)] left-1/2 -translate-x-1/2 top-0 rounded-t-[150%] h-full bg-black absolute"></div>
+            <div className="w-[200vw] h-[100vh] left-1/2 -translate-x-1/2 top-0 rounded-t-[105550%] bg-black absolute"></div>
          </div>
-         <Status
-            status={status}
-            styles="absolute right-1/2 left-1/2 bottom-6"
-            hidden={'opacity-0'}
-            visible={'opacity-100'}
-         />
+         <Status status={status} styles="absolute right-1/2 left-1/2 bottom-6" hidden={'opacity-0'} visible={'opacity-100'} />
       </main>
    );
 }

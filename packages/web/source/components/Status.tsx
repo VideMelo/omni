@@ -2,40 +2,66 @@ import { useState, useEffect, useRef } from 'react';
 import Omni from '../assets/icons/Omni.js';
 import Loading from '../assets/icons/Loading.js';
 
-function Status({ status, styles, visible, hidden }) {
-   const [queue, setQueue] = useState([]);
-   const timersRef = useRef({});
-   const pendingAsync = useRef({});
+type StatusType = 'error' | 'warn' | 'async' | 'done' | 'default';
+
+interface StatusItem {
+   id: number;
+   message: string | null;
+   type: StatusType;
+   async?: string | null;
+   respond?: string | null;
+   createdAt: number;
+   isExiting: boolean;
+}
+
+interface StatusProps {
+   status: {
+      message: string | null;
+      type: StatusType;
+      async?: string;
+      respond?: string;
+   } | null;
+   styles?: string;
+   visible?: string;
+   hidden?: string;
+}
+
+function Status({ status, styles = '', visible = '', hidden = '' }: StatusProps) {
+   const [queue, setQueue] = useState<StatusItem[]>([]);
+   const timersRef = useRef<{
+      [key: number]: { exitTimer: NodeJS.Timeout; removalTimer?: NodeJS.Timeout };
+   }>({});
+   const pendingAsync = useRef<{ [key: string]: number }>({});
 
    useEffect(() => {
       return () => {
          Object.values(timersRef.current).forEach(({ exitTimer, removalTimer }) => {
             clearTimeout(exitTimer);
-            clearTimeout(removalTimer);
+            if (removalTimer) clearTimeout(removalTimer);
          });
       };
    }, []);
 
    useEffect(() => {
-      if (!status && !status?.respond) return;
+      if (!status) return;
 
-      const newStatus = {
+      const newStatus: StatusItem = {
          id: Date.now(),
-         message: status?.message,
-         type: status?.type,
-         asyncId: status?.async,
-         respondId: status?.respond,
+         message: status?.message || null,
+         type: status?.type || 'default',
+         async: status?.async || null,
+         respond: status?.respond || null,
          createdAt: Date.now(),
-         isExiting: false
+         isExiting: false,
       };
-      console.log(newStatus)
+      console.log(newStatus);
 
-      setQueue(prevQueue => {
+      setQueue((prevQueue) => {
          let updatedQueue = [...prevQueue];
 
-         if (newStatus.respondId) {
+         if (newStatus.respond) {
             const targetIndex = updatedQueue.findIndex(
-               item => item.asyncId === newStatus.respondId
+               (item) => item.async === newStatus.respond
             );
 
             if (targetIndex > -1) {
@@ -48,23 +74,21 @@ function Status({ status, styles, visible, hidden }) {
                   updatedQueue = updatedQueue.filter((_, i) => i !== targetIndex);
                } else if (remainingTime > 0) {
                   setTimeout(() => {
-                     setQueue(prev => {
+                     setQueue((prev) => {
                         const newQueue = [...prev];
-                        const newTargetIndex = newQueue.findIndex(
-                           item => item.id === target.id
-                        );
+                        const newTargetIndex = newQueue.findIndex((item) => item.id === target.id);
 
                         if (newTargetIndex > -1) {
                            newQueue[newTargetIndex] = {
                               ...newQueue[newTargetIndex],
                               message: newStatus.message,
                               type: newStatus.type,
-                              asyncId: newStatus.asyncId || null,
+                              async: newStatus.async || null,
                               isExiting: false,
-                              createdAt: Date.now()
+                              createdAt: Date.now(),
                            };
 
-                           if (!newStatus.asyncId) {
+                           if (!newStatus.async) {
                               startTimer(newQueue[newTargetIndex]);
                            }
                         }
@@ -77,12 +101,12 @@ function Status({ status, styles, visible, hidden }) {
                      ...target,
                      message: newStatus.message,
                      type: newStatus.type,
-                     asyncId: newStatus.asyncId || null,
+                     async: newStatus.async || null,
                      isExiting: false,
-                     createdAt: Date.now()
+                     createdAt: Date.now(),
                   };
 
-                  if (!newStatus.asyncId) {
+                  if (!newStatus.async) {
                      startTimer(updatedQueue[targetIndex]);
                   }
                }
@@ -93,10 +117,10 @@ function Status({ status, styles, visible, hidden }) {
          if (newStatus.message) {
             updatedQueue = [...updatedQueue, newStatus].slice(-3);
 
-            if (!newStatus.asyncId) {
+            if (!newStatus.async) {
                startTimer(newStatus);
             } else {
-               pendingAsync.current[newStatus.asyncId] = newStatus.id;
+               pendingAsync.current[newStatus.async] = newStatus.id;
             }
          }
 
@@ -104,20 +128,20 @@ function Status({ status, styles, visible, hidden }) {
       });
    }, [status]);
 
-   const startTimer = (status) => {
+   const startTimer = (status: StatusItem) => {
       clearExistingTimers(status.id);
 
       const minDisplayTime = status.type === 'async' ? 2000 : 0;
       const timerDuration = Math.max(3000, minDisplayTime);
 
       const exitTimer = setTimeout(() => {
-         setQueue(prev => prev.map(item =>
-            item.id === status.id ? { ...item, isExiting: true } : item
-         ));
+         setQueue((prev) =>
+            prev.map((item) => (item.id === status.id ? { ...item, isExiting: true } : item))
+         );
 
          const removalTimer = setTimeout(() => {
-            setQueue(prev => prev.filter(item => item.id !== status.id));
-            if (status.asyncId) delete pendingAsync.current[status.asyncId];
+            setQueue((prev) => prev.filter((item) => item.id !== status.id));
+            if (status.async) delete pendingAsync.current[status.async!];
          }, 500);
 
          timersRef.current[status.id] = { exitTimer, removalTimer };
@@ -126,21 +150,23 @@ function Status({ status, styles, visible, hidden }) {
       timersRef.current[status.id] = { exitTimer };
    };
 
-   const clearExistingTimers = (id) => {
+   const clearExistingTimers = (id: number) => {
       if (timersRef.current[id]) {
          clearTimeout(timersRef.current[id].exitTimer);
-         clearTimeout(timersRef.current[id].removalTimer);
+         if (timersRef.current[id].removalTimer) {
+            clearTimeout(timersRef.current[id].removalTimer);
+         }
          delete timersRef.current[id];
       }
    };
 
-   const processMessage = (message) => {
+   const processMessage = (message: string | null) => {
       if (!message) return null;
 
       const regex = /\[([^\]]+)\]/g;
-      const parts = [];
+      const parts: (string | JSX.Element)[] = [];
       let lastIndex = 0;
-      let match;
+      let match: RegExpExecArray | null;
 
       while ((match = regex.exec(message)) !== null) {
          if (match.index > lastIndex) {
@@ -167,10 +193,17 @@ function Status({ status, styles, visible, hidden }) {
             <div
                key={item.id}
                className={`w-max rounded-full p-2 flex justify-center gap-3 items-center ease-in duration-500
-            ${item.type === 'error' ? 'bg-red-600' :
-                     item.type === 'warn' ? 'bg-yellow-600' :
-                        item.type === 'async' ? 'bg-blue-600' :
-                           item.type === 'done' ? 'bg-green-600' : 'bg-gray-600'}
+            ${
+               item.type === 'error'
+                  ? 'bg-red-600'
+                  : item.type === 'warn'
+                    ? 'bg-yellow-600'
+                    : item.type === 'async'
+                      ? 'bg-blue-600'
+                      : item.type === 'done'
+                        ? 'bg-green-600'
+                        : 'bg-gray-600'
+            }
             ${item.isExiting ? hidden : visible}`}
             >
                <Omni />
@@ -178,8 +211,8 @@ function Status({ status, styles, visible, hidden }) {
                   {processMessage(item.message)}
                </div>
                {item.type === 'async' && (
-                  <div className='bg-white bg-opacity-10 rounded-full px-3'>
-                     <Loading className='w-6 h-6' />
+                  <div className="bg-white bg-opacity-10 rounded-full px-3">
+                     <Loading className="w-6 h-6" />
                   </div>
                )}
             </div>

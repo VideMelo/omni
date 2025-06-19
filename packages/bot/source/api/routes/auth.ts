@@ -31,36 +31,13 @@ route.get('/auth', async (req, res) => {
          expires: response.data.expires_in,
          state: state,
       });
-   } catch (error) {
+   } catch (error: any) {
       console.error(error);
-      res.send({
-         type: 'auth-error',
-         error,
+      res.status(500).json({
+         error: true,
+         message: error.message,
       });
    }
-});
-
-route.get('/auth-guild', (req, res) => {
-   const guild = req.query.guild_id as string | undefined;
-
-   if (!guild) {
-      res.status(400).send({ error: 'Invalid request!' });
-      return;
-   }
-
-   res.send(`
-      <script>
-         window.opener.postMessage(
-            {
-               type: 'auth-success',
-               guild: '${guild}',
-            },
-            "*"
-         );
-         window.close();
-         window.location.href = "/dashboard/${guild}";
-      </script>
-   `);
 });
 
 export default route;

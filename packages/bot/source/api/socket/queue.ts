@@ -7,11 +7,11 @@ import { isBoolean } from 'node:util';
 const RATE_LIMIT_TIME = 15000;
 const MAX_REQUESTS_DEFAULT = 20;
 const MAX_REQUESTS_CUSTOM: Record<string, number> = {
-   play: 3,
-   next: 3,
-   previous: 3,
+   'player:play': 3,
+   'player:next': 3,
+   'player:previous': 3,
 };
-const IGNORED_EVENTS = ['getQueue', 'getPlayer', 'setUser', 'voice:sync', 'search'];
+const IGNORED_EVENTS = ['queue:get', 'player:get', 'user:set', 'voice:sync', 'search:top'];
 
 interface RequestEventData {
    count: number;
@@ -77,7 +77,11 @@ module.exports = (io: Server) => {
       });
 
       async function validate() {
-         if (!socket?.user) return;
+         if (!socket?.user) {
+            const error = { status: 404, message: 'userNotFound' };
+            socket.emit('status', { type: 'error', ...error });
+            return { error };
+         }
 
          if (!socket.guild || !socket?.voice) {
             const error = { status: 404, message: 'userNotInVoice' };
@@ -95,14 +99,14 @@ module.exports = (io: Server) => {
 
          if (voice.id !== player?.voice) {
             const error = { status: 403, message: 'playerNotInitied' };
-            // socket.emit('status', { type: 'error', ...error });
+            socket.emit('status', { type: 'error', ...error });
             return { error };
          }
 
          const requester = voice.members.get(socket.user);
          if (!requester) {
             const error = { status: 403, message: 'userNotInPlayerChannel' };
-            // socket.emit('status', { type: 'warn', ...error });
+            socket.emit('status', { type: 'warn', ...error });
             return { error };
          }
 
@@ -126,13 +130,11 @@ module.exports = (io: Server) => {
       });
 
       socket.on('player:get', (callback?: (data?: any) => void) => {
-         if (!socket.guild || !socket.voice) return callback?.(undefined);
+         if (!socket.guild || !socket.voice || !socket.user) return callback?.(undefined);
          const player = client.players.get(socket.guild);
          if (!player) return callback?.(undefined);
 
-         logger.info(
-            `user: ${socket.user} with ${socket.id} player:get, in guild: ${socket.guild}`
-         );
+         logger.info(`user: ${socket.user} with ${socket.id} player:get, in guild: ${socket.guild}`);
          callback?.({
             metadata: player.metadata,
             repeat: player.queue.repeat,
@@ -144,7 +146,8 @@ module.exports = (io: Server) => {
       });
 
       socket.on('search:top', async (query: string, callback?: (result: any) => void) => {
-         const result = await client.search.resolve(query, { type: 'topResult' });
+         if (!socket.user) return callback?.(undefined);
+         const result = await client.search.resolve(query, { type: 'top' });
          callback?.(result);
       });
 

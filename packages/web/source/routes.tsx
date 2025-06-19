@@ -1,13 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {
-   BrowserRouter as Router,
-   Route,
-   Routes,
-   Navigate,
-   useLocation,
-   useNavigate,
-} from 'react-router-dom';
-
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -18,82 +10,74 @@ import Login from './pages/Login.jsx';
 import Queue from './pages/Queue.jsx';
 
 import socket from './services/socket.js';
+import { useAuth } from './contexts/AuthContext.jsx';
 
-function RedirectRoute({ setStatus }: any) {
+function RedirectRoute() {
    const navigate = useNavigate();
 
    useEffect(() => {
       const query = new URLSearchParams(location.search);
+
       const code = query.get('code');
       const state = query.get('state');
 
-      if (code) {
-         try {
-            axios
-               .get(`${window.location.origin}/api/auth`, {
-                  params: {
-                     code,
-                     state,
-                  },
-               })
-               .then((res) => {
-                  window.close();
-                  window.opener.postMessage(res.data, '*');
-                  window.location.href = '/';
-               })
-               .catch((err) => {
-                  window.close();
-                  window.opener.postMessage({ type: 'auth-error' }, '*');
-                  window.location.href = '/';
-               });
-         } catch (err: any) {
-            window.close();
-            window.opener.postMessage({ type: 'auth-error' }, '*');
-            window.location.href = '/';
-         }
-      }
+      window.close();
+      window.opener.postMessage({ code, state, type: 'auth-success' }, '*');
    }, []);
 
    return null;
 }
 
+const Loading = () => {
+   return 'loading...';
+};
+
 const Routers = () => {
+   const { state: user, dispatch } = useAuth();
    const location = useLocation();
-   const [token, setToken] = useState(Cookies.get('auth-token'));
-   const [isAuth, setIsAuth] = useState(!!token);
+
+   const token = Cookies.get('auth-token');
+
+   let [isAuth, setIsAuth] = useState(!!user.id);
+   let [isLoading, setIsLoading] = useState(!!token && !isAuth);
 
    useEffect(() => {
-      setToken(Cookies.get('auth-token'));
       if (token) {
-         axios
-            .get('https://discord.com/api/users/@me', {
-               headers: {
-                  Authorization: `Bearer ${token}`,
-               },
-            })
-            .then((res) => {
-               socket.emit('user:set', res.data.id);
-               console.log(res.data);
-               setIsAuth(true);
-            })
-            .catch((error) => {
-               console.log(error);
-            });
+         socket.emit('user:set', token, (user: any) => {
+            if (!user?.id) {
+               Cookies.remove('auth-token');
+
+               setIsLoading(false);
+               setIsAuth(false);
+
+               return dispatch({ type: 'RESET_USER' });
+            }
+
+            setIsAuth(true);
+            setIsLoading(false);
+
+            dispatch({ type: 'SET_USER', payload: user });
+            console.log(`[WS]: user: ${user.username}, connected with socket: ${socket.id}`);
+         });
+      } else {
+         setIsLoading(false);
+         setIsAuth(false);
+         dispatch({ type: 'RESET_USER' });
       }
    }, [location.pathname]);
 
    return (
       <Routes>
          <Route path="/login" element={isAuth ? <Navigate to="/" replace /> : <Login />} />
-         <Route path="/redirect" element={<RedirectRoute setStatus />} />
-         <Route path="/" element={!isAuth ? <Navigate to="/login" replace /> : <Layout />}>
-            <Route path="/" element={<Home />} />
+         <Route path="/redirect" element={<RedirectRoute />} />
+         <Route path="/" element={isLoading ? <Loading /> : isAuth ? <Layout /> : <Navigate to="/login" replace />}>
+            <Route index element={<Home />} />
             <Route path="/search" element={<Search />} />
             <Route path="/queue" element={<Queue />} />
-            <Route path="/*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
          </Route>
       </Routes>
    );
 };
 
-export { Router, Routers };
+export { Routers, Router };
