@@ -42,6 +42,8 @@ export default class Search {
       options.type ??= this.idealSearchType(query);
       if (!options.type) return;
 
+      query = query.slice(0, 250)
+
       const cache = this.incache(query);
       if (cache?.type == options.type) return cache;
 

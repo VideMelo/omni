@@ -106,6 +106,7 @@ export default class Player extends EventEmitter {
             })
             .on(Voice.AudioPlayerStatus.Idle, () => {
                this.playing = false;
+               this.socket()
 
                const next = this.queue.next();
                if (!next) return this.emit('queueEnd', this);
