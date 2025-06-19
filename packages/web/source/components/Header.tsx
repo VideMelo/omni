@@ -39,6 +39,7 @@ export default function Header() {
                autoCorrect="off"
                autoCapitalize="off"
                spellCheck="false"
+               maxLength={250}
                onKeyUp={(event: any) => {
                   if (event.key === 'Enter') handleSearch(event.target.value);
                }}
