@@ -94,7 +94,7 @@ export default function Page() {
                      <div className="flex gap-1 p-4 w-full bg-black bg-opacity-40 hover:bg-opacity-50 rounded-2xl cursor-pointer">
                         <div className="flex w-full gap-4">
                            <img
-                              src={top?.thumbnail}
+                              src={top?.thumbnail || top?.icon}
                               className={`h-[135px] w-[135px] shrink-0 ${top.type == 'artist' ? 'rounded-full' : 'rounded-md'}`}
                            />
                            <div className="flex flex-col py-1 w-full">

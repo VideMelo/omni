@@ -1,5 +1,6 @@
 export interface Track {
    name: string;
+   type?: 'track'
    streamable?: string;
    duration: number;
    thumbnail?: string;
@@ -58,6 +59,7 @@ export class Track implements Track {
       metadata,
       album,
    }: Track) {
+      this.type = 'track'
       this.name = name;
       this.url = url;
       this.source = source;
