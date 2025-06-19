@@ -13,13 +13,6 @@ export default defineConfig({
       watch: {
          usePolling: true,
       },
-      proxy: {
-         '/api': {
-            target: process.env.VITE_SERVER_URL,
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api/, ''),
-         },
-      },
    },
    resolve: {
       alias: {

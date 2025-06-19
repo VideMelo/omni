@@ -8,6 +8,7 @@ import Scout from '../assets/icons/Scout.js';
 import useAuth from '../hooks/useAuth.js';
 import Status from '../components/Status.js';
 import axios from 'axios';
+import api from '../services/axios.js';
 
 export default function Page() {
    const [status, setStatus]: any = useState(null);
@@ -28,10 +29,9 @@ export default function Page() {
 
       onSuccess: (data: any) => {
          if (data.code) {
-            axios
-               .get(`${window.location.origin}/api/auth`, {
-                  params: { code: data.code, state: data.state },
-               })
+            api.get(`/auth`, {
+               params: { code: data.code, state: data.state },
+            })
                .then((res: any) => {
                   if (!res.data?.token) return setAuthError();
 

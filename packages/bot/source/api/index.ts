@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import express from 'express';
+import cors from 'cors';
 import bodyParser from 'body-parser';
 import { createServer as createHTTPServer } from 'http';
 import { createServer as createHTTPSServer } from 'https';
@@ -13,6 +14,11 @@ const __dirname = path.dirname(__filename);
 const production = process.env.NODE_ENV === 'production';
 
 const api = express();
+
+api.use(cors());
+
+api.use(bodyParser.urlencoded({ extended: true }));
+api.use(bodyParser.json());
 
 const server = production
    ? createHTTPSServer(
@@ -29,9 +35,6 @@ const io = new SocketIOServer(server, {
       origin: '*',
    },
 });
-
-api.use(bodyParser.urlencoded({ extended: true }));
-api.use(bodyParser.json());
 
 const routesPath = path.join(__dirname, 'routes');
 fs.readdirSync(routesPath).forEach((file) => {
