@@ -6,7 +6,7 @@ interface Track {
    duration: number;
    album?: { name: string };
    artist: { name: string };
-   thumbnail?: string;
+   thumbnail: string;
 }
 
 interface Palette {

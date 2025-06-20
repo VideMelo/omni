@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 import Slider from './Slider.js';
@@ -23,10 +22,65 @@ import List from '../assets/icons/List.js';
 import Lyrics from '../assets/icons/Lyrics.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
 
+interface Artist {
+   name: string;
+}
+
+interface Album {
+   name: string;
+}
+
+interface Track {
+   id: string;
+   name: string;
+   artist: Artist;
+   album?: Album;
+   duration: number;
+   thumbnail: string ;
+}
+
+interface PaletteColor {
+   rgb: [number, number, number];
+   hex: string;
+}
+
+interface Palette {
+   alpha: string;
+   [key: string]: any;
+}
+
+type RepeatMode = 'off' | 'queue' | 'track';
+
+interface PlayerState {
+   track: Track | null;
+   playing: boolean;
+   paused: boolean;
+   timer: number;
+   palette: Palette | null;
+   cover: string | null;
+   repeat: RepeatMode;
+   shuffled: boolean;
+   volume: number;
+   queue: Track[];
+   voice: string | null;
+}
+
 function Player() {
    const location = useLocation();
    const { state, dispatch } = usePlayer();
-   const { track, playing, paused, timer, palette, cover, repeat, shuffled, volume, queue, voice } = state;
+   const {
+      track,
+      playing,
+      paused,
+      timer,
+      palette,
+      cover,
+      repeat,
+      shuffled,
+      volume,
+      queue,
+      voice,
+   }: PlayerState = state;
 
    useEffect(() => {
       if (!playing) return;
@@ -36,7 +90,7 @@ function Player() {
          }
       }, 1000);
       return () => clearInterval(interval);
-   }, [playing, paused, track, timer]);
+   }, [playing, paused, track, timer, dispatch]);
 
    useEffect(() => {
       if (!track) return;
@@ -66,7 +120,6 @@ function Player() {
          dispatch({ type: 'SET_REPEAT', payload: data.repeat });
          dispatch({ type: 'SET_SHUFFLED', payload: data.shuffled });
          handlePalette(data.current?.thumbnail);
-         console.log(data.list.length)
       });
 
       socket.emit('player:get', (data: any) => {
@@ -79,7 +132,7 @@ function Player() {
       });
    }
 
-   async function fetchTrackAnimatedCover(track: any) {
+   async function fetchTrackAnimatedCover(track: Track) {
       try {
          if (!track.album || !track.artist) return;
          const response = await axios.get('https://ws.audioscrobbler.com/2.0/', {
@@ -104,10 +157,10 @@ function Player() {
       }
    }
 
-   function handlePalette(image: any) {
+   function handlePalette(image: string) {
       if (!image) return;
-      function calculateResultingColor(upperColor: any, lowerColor: any, alpha: any) {
-         function calculateChannel(upperChannel: any, lowerChannel: any, alpha: any) {
+      function calculateResultingColor(upperColor: [number, number, number], lowerColor: [number, number, number], alpha: number) {
+         function calculateChannel(upperChannel: number, lowerChannel: number, alpha: number) {
             return Math.round(upperChannel * alpha + lowerChannel * (1 - alpha));
          }
 
@@ -115,12 +168,12 @@ function Player() {
             calculateChannel(upperColor[0], lowerColor[0], alpha), // R
             calculateChannel(upperColor[1], lowerColor[1], alpha), // G
             calculateChannel(upperColor[2], lowerColor[2], alpha), // B
-         ];
+         ] as [number, number, number];
       }
 
       const vibrant = new Vibrant(image);
-      vibrant.getPalette().then((palette) => {
-         const color = palette.Vibrant!.rgb;
+      vibrant.getPalette().then((paletteObj: any) => {
+         const color = paletteObj.Vibrant!.rgb as [number, number, number];
          const alphaArr = calculateResultingColor(color, [0, 0, 0], 0.25);
          const alpha =
             '#' +
@@ -133,14 +186,14 @@ function Player() {
          dispatch({
             type: 'SET_PALETTE',
             payload: {
-               ...palette,
+               ...paletteObj,
                alpha,
             },
          });
       });
    }
 
-   function handleItemClick(item: any) {
+   function handleItemClick(item: Track) {
       socket.emit('player:play', item);
    }
 
