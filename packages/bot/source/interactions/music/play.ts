@@ -13,22 +13,10 @@ export default class Play extends Interaction {
          usage: '[input]',
       });
 
-      this.addStringOption((option) =>
-         option
-            .setName('input')
-            .setDescription('Search a music name!')
-            .setRequired(true)
-            .setAutocomplete(true)
-      );
+      this.addStringOption((option) => option.setName('input').setDescription('Search a music name!').setRequired(true).setAutocomplete(true));
    }
 
-   async autocomplete({
-      client,
-      context,
-   }: {
-      client: Bot;
-      context: AutocompleteInteraction<'cached'>;
-   }) {
+   async autocomplete({ client, context }: { client: Bot; context: AutocompleteInteraction<'cached'> }) {
       try {
          if (client.verify.isNotInSameVoice(context) || client.verify.isUserNotInVoice(context)) {
             return await context.respond([
@@ -40,11 +28,11 @@ export default class Play extends Interaction {
          }
 
          const focused = context.options.getFocused();
-         if (!focused || client.search.isUrl(focused)) return await context.respond([]);
+         if (!focused) return await context.respond([]);
 
          const search = await client.search.resolve(focused);
-         if (!search?.items.tracks)
-            return await context.respond([{ name: focused, value: focused }]);
+         console.log(search);
+         if (!search?.items.tracks) return await context.respond([]);
          const tracks = search.items.tracks.map((track: any) => {
             const { artist, name } = track;
             const item =
@@ -62,8 +50,7 @@ export default class Play extends Interaction {
 
    async execute({ client, context }: { client: Bot; context: InteractionContext }) {
       try {
-         if (client.verify.isUserNotInVoice(context) || client.verify.isNotInSameVoice(context))
-            return;
+         if (client.verify.isUserNotInVoice(context) || client.verify.isNotInSameVoice(context)) return;
 
          const input = context.raw.options.getString('input', true);
 
@@ -73,25 +60,35 @@ export default class Play extends Interaction {
 
          let player = client.players.get(context.guild!.id);
 
-         if (!player)
-            player = await client.initGuildPlayer(context.member!.voice.channel!, context.channel!);
+         if (!player) player = await client.initGuildPlayer(context.member!.voice.channel!, context.channel!);
          if (!player) {
-            return await context.replyErro(
-               'An error occurred while initializing the guild player!'
-            );
+            return await context.replyErro('An error occurred while initializing the guild player!');
          }
+         if (!player.channel) player.setTextChannel(context.channel!.id);
 
          console.log(`Searching for: ${input}`);
          const search = await client.search.resolve(input);
-         if (!search?.items.tracks) return await context.replyErro('No tracks found.');
+         switch (search?.type) {
+            case 'track': {
+               if (!search?.items.tracks) return await context.replyErro('No tracks found.');
 
-         if (!player.channel) player.setTextChannel(context.channel!.id)
-         const track = await player.play(search.items.tracks[0]).catch(() => {
-            context.replyErro('An error occurred while playing the track!');
-         });
-         if (!track) return context.replyErro('An error occurred while playing the track!');
+               const track = await player.play(search.items.tracks[0]).catch(() => {
+                  context.replyErro('An error occurred while playing the track!');
+               });
+               if (!track) return await context.replyErro('An error occurred while playing the track! Try latter.');
+            }
+            case 'playlist': {
+               if (!search.items.playlists!.length) return context.replyErro('This Playlist is empty!');
+               let track = player.queue.new(search.items.playlists![0]);
+               if (!track) return await context.replyErro('An error occurred while adding playlist to queue!');
+               let played = await player.play(track).catch(() => {
+                  context.replyErro('An error occurred while playing the track!');
+               });
+               if (!played) return await context.replyErro('An error occurred while playing the track! Try latter.');
+            }
+         }
 
-         return await context.noReply()
+         return await context.noReply();
       } catch (error: any) {
          throw new Error(error);
       }

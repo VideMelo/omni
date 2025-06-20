@@ -1,6 +1,6 @@
 export interface Track {
    name: string;
-   type?: 'track'
+   type?: 'track';
    streamable?: string;
    duration: number;
    thumbnail?: string;
@@ -59,7 +59,7 @@ export class Track implements Track {
       metadata,
       album,
    }: Track) {
-      this.type = 'track'
+      this.type = 'track';
       this.name = name;
       this.url = url;
       this.source = source;
@@ -112,5 +112,15 @@ export class TrackMetadata implements TrackMetadata {
 }
 
 export class Playlist {
-   constructor(public id: string, public title: string, public description: string, public tracks: Track[]) {}
+   public id: string;
+   public name: string;
+   public description: string | null;
+   public tracks: Track[];
+
+   constructor({ id, name, description, tracks }: { id: string; name: string; description: string | null; tracks: Track[] }) {
+      this.id = id;
+      this.name = name;
+      this.description = description;
+      this.tracks = tracks;
+   }
 }

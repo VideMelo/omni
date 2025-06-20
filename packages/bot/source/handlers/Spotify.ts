@@ -50,6 +50,7 @@ interface SpotifyPlaylist {
    name: string;
    artist: string | { name: string; id: string } | undefined;
    thumbnail: string;
+   description: string | null;
    url: string;
    total: number;
    tracks: SpotifyTrack[];
@@ -69,7 +70,7 @@ interface SpotifyArtist {
 
 type SpotifySearchResultType = 'tracks' | 'albums' | 'playlists' | 'artists';
 interface SpotifySearchResult {
-   type: SpotifySearchType | 'topResult' | 'searchResult';
+   type: SpotifySearchType | 'top' | 'search';
    items: {
       tracks: SpotifyTrack[];
       playlists: SpotifyPlaylist[];
@@ -141,7 +142,7 @@ export default class Spotify {
          }
 
          return {
-            type: 'searchResult',
+            type: options.types.length > 1 ? 'search' : options.types[0],
             items: {
                tracks: result.body.tracks.items.map((item) => this.build(item)) || [],
                artists:
@@ -221,11 +222,11 @@ export default class Spotify {
 
       if (playlist.tracks.total === 0) return;
 
-      let allItems = [...playlist.tracks.items];
-      const totalTracks = playlist.tracks.total;
+      let items = [...playlist.tracks.items];
+      const total = playlist.tracks.total;
 
-      if (totalTracks > 100) {
-         for (let offset = 100; offset < totalTracks; offset += 100) {
+      if (total > 100) {
+         for (let offset = 100; offset < total; offset += 100) {
             const tracksPage = await this.request(() => this.api.getPlaylistTracks(id, { offset, limit: 100 }).then((res) => res.body.items)).catch(
                (error: any) => {
                   Logger.error('Failed to fetch playlist tracks:', error);
@@ -233,7 +234,7 @@ export default class Spotify {
                }
             );
 
-            allItems.push(...tracksPage);
+            items.push(...tracksPage);
          }
       }
 
@@ -242,10 +243,11 @@ export default class Spotify {
          id: playlist.id,
          name: playlist.name,
          artist: playlist.owner.display_name,
+         description: playlist.description,
          thumbnail: playlist.images[0]?.url,
          url: playlist.external_urls.spotify,
-         total: totalTracks,
-         tracks: allItems.map((item) => (item.track ? this.build(item.track) : undefined)).filter(Boolean) as SpotifyTrack[],
+         tracks: items.map((item) => (item.track ? this.build(item.track) : undefined)).filter(Boolean) as SpotifyTrack[],
+         total,
       };
    }
 

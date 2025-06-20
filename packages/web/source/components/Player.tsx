@@ -31,7 +31,7 @@ function Player() {
    useEffect(() => {
       if (!playing) return;
       const interval = setInterval(() => {
-         if (!paused) {
+         if (!paused || timer <= track?.duration!) {
             dispatch({ type: 'SET_TIMER', payload: timer + 1 });
          }
       }, 1000);
@@ -66,6 +66,7 @@ function Player() {
          dispatch({ type: 'SET_REPEAT', payload: data.repeat });
          dispatch({ type: 'SET_SHUFFLED', payload: data.shuffled });
          handlePalette(data.current?.thumbnail);
+         console.log(data.list.length)
       });
 
       socket.emit('player:get', (data: any) => {

@@ -26,10 +26,11 @@ export default class Queue {
          for (let track of list.tracks) {
             track.index = this.tracks.size;
             track.requester = options?.requester || null;
-            this.tracks.set(track.id, track);
+            this.tracks.set(track.id, new Track(track));
          }
          return this.tracks.find((track) => track.id === list.tracks[0].id);
       } else if (item instanceof Track) {
+         if (this.tracks.has(item.id)) return
          item.index = item.index ?? this.tracks.size;
          item.requester = item.requester ?? (options?.requester || null);
 
