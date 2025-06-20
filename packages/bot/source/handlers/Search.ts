@@ -110,7 +110,6 @@ export default class Search {
 
    incache(query: string) {
       const cache = this.cache.get(query.toLowerCase());
-      if (cache) console.log('cache searched');
       return cache;
    }
 

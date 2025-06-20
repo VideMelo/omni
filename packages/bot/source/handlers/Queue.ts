@@ -28,6 +28,7 @@ export default class Queue {
             track.requester = options?.requester || null;
             this.tracks.set(track.id, new Track(track));
          }
+         this.player.socket();
          return this.tracks.find((track) => track.id === list.tracks[0].id);
       } else if (item instanceof Track) {
          if (this.tracks.has(item.id)) return
