@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 
 import Layout from './layout.jsx';
-import Home from './pages/home.js';
-import Search from './pages/search.js';
-import Login from './pages/login.js';
-import Queue from './pages/queue.js';
+import Home from './pages/home.jsx';
+import Search from './pages/search.jsx';
+import Login from './pages/login.jsx';
+import Queue from './pages/queue.jsx';
 
 import socket from './services/socket.js';
 import { useAuth } from './contexts/AuthContext.jsx';
