@@ -15,11 +15,13 @@ export default function Page() {
    const { state, dispatch } = usePlayer();
    const { track, playing, paused, timer, palette, cover, volume, voice } = state;
 
-
    if (!track || !palette || !cover) return null;
-   
+
    return (
-      <main className="w-full h-full flex p-6 gap-3 overflow-auto scrollbar-none justify-center" style={{ backgroundColor: palette?.alpha }}>
+      <main
+         className="w-full h-full  flex p-6 gap-3 overflow-auto scrollbar-none justify-center"
+         style={{ backgroundColor: palette?.alpha }}
+      >
          <div className="flex flex-col gap-4 w-full h-full">
             <div className={`relative  scrollbar-none w-full h-full flex-col flex rounded-3xl`}>
                <div className="flax w-ful mb-5 rounded-[20px] px-6 py-4 justify-center gap-10 items-center bg-black bg-opacity-40">
@@ -30,7 +32,7 @@ export default function Page() {
                   </div>
                </div>
                <div className={`flex flexduration-700 mb-9`}>
-                  <img src={track.thumbnail} className="w-[200px] h-[200px] object-cover rounded-3xl" />
+                  <img src={track.icon} className="w-[200px] h-[200px] object-cover rounded-3xl" />
                   <div className="flex w-full p-8 items-end justify-between">
                      <div>
                         <div className="font-semibold text-3xl font-poppins">{track.name}</div>
@@ -44,10 +46,10 @@ export default function Page() {
                         value={timer}
                         duration={track.duration / 1000}
                         onChange={(value: any) => {
-                           dispatch({ type: 'SET_TIMER', payload: value.time});
+                           dispatch({ type: 'SET_TIMER', payload: value.time });
                         }}
                         onCommit={(value: any) => {
-                           dispatch({ type: 'SET_TIMER', payload: value.time});
+                           dispatch({ type: 'SET_TIMER', payload: value.time });
                            socket.emit('player:seek', value.time);
                         }}
                      />

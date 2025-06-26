@@ -15,12 +15,7 @@ interface StatusItem {
 }
 
 interface StatusProps {
-   status: {
-      message: string | null;
-      type: StatusType;
-      async?: string;
-      respond?: string;
-   } | null;
+   status: StatusItem | null
    styles?: string;
    visible?: string;
    hidden?: string;
@@ -54,7 +49,6 @@ function Status({ status, styles = '', visible = '', hidden = '' }: StatusProps)
          createdAt: Date.now(),
          isExiting: false,
       };
-      console.log(newStatus);
 
       setQueue((prevQueue) => {
          let updatedQueue = [...prevQueue];

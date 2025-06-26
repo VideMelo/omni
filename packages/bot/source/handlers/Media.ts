@@ -3,11 +3,12 @@ export interface Track {
    type?: 'track';
    streamable?: string;
    duration: number;
-   thumbnail?: string;
+   icon?: string;
    artist: TrackArtist;
    id: string;
    url: string;
-   source: 'spotify' | 'youtube' | 'cache';
+   key?: string;
+   source: 'spotify' | 'youtube' | 'deezer' | 'cache';
    index?: number;
    ogidx?: number;
    requester?: string | null;
@@ -17,8 +18,7 @@ export interface Track {
       name: string;
       id: string;
       url?: string;
-      thumbnail?: string;
-      total: number;
+      icon?: string;
    };
    metadata?: TrackMetadata;
 }
@@ -30,7 +30,7 @@ export interface TrackMetadata {
    name: string;
    duration: number;
    explicit?: boolean;
-   thumbnail?: string;
+   icon?: string;
    artist: TrackArtist;
 }
 
@@ -47,7 +47,7 @@ export class Track implements Track {
       id,
       name,
       artist,
-      thumbnail,
+      icon,
       explicit = false,
       duration,
       streamable,
@@ -64,21 +64,28 @@ export class Track implements Track {
       this.url = url;
       this.source = source;
       this.duration = duration;
-      this.thumbnail = thumbnail;
+      this.icon = icon;
       this.metadata = metadata ? new TrackMetadata(metadata) : undefined;
-      this.artist = {
-         name: artist.name ?? this.metadata?.artist.name ?? 'Unknown Artist',
-         id: artist.id,
-         url: artist.url,
-         icon: artist.icon || this.metadata?.artist.icon || undefined,
-      };
+      this.artist = artist
+         ? {
+              name: artist.name ?? this.metadata?.artist.name ?? 'Unknown Artist',
+              id: artist.id,
+              url: artist.url,
+              icon: artist.icon || this.metadata?.artist.icon || undefined,
+           }
+         : {
+              name: this.metadata?.artist.name ?? 'Unknown Artist',
+              id: this.metadata?.artist.id ?? '',
+              url: this.metadata?.artist.url,
+              icon: this.metadata?.artist.icon,
+           };
+      this.key = Buffer.from(this.name + this.artist.name, 'utf8').toString('base64');
       this.album = album
          ? {
               name: album.name,
               id: album.id,
               url: album.url,
-              thumbnail: album.thumbnail,
-              total: album.total || 0,
+              icon: album.icon,
            }
          : undefined;
 
@@ -94,14 +101,14 @@ export class Track implements Track {
 }
 
 export class TrackMetadata implements TrackMetadata {
-   constructor({ source, id, url, name, duration, explicit = false, thumbnail, artist }: TrackMetadata) {
+   constructor({ source, id, url, name, duration, explicit = false, icon, artist }: TrackMetadata) {
       this.source = source;
       this.id = id;
       this.url = url;
       this.name = name;
       this.duration = duration;
       this.explicit = explicit;
-      this.thumbnail = thumbnail;
+      this.icon = icon;
       this.artist = {
          name: artist.name,
          id: artist.id,

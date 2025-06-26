@@ -18,8 +18,7 @@ export default class QueueEnd extends Event {
       if (!player.channel) return;
 
       const Embed = client.embed.new({
-         description:
-            'No more songs in the queue. Leaving the voice channel in 3 minutes if nothing’s added.',
+         description: 'No more songs in the queue. Leaving the voice channel in 3 minutes if nothing’s added.',
       });
 
       const channel = await client.channels.fetch(player.channel);

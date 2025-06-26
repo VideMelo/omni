@@ -1,10 +1,7 @@
 import { ChildProcess } from 'child_process';
-
 import ytex from 'youtube-dl-exec';
 import ytsr from 'youtube-sr';
-
 import ytdl from '@distube/ytdl-core';
-
 import { TrackMetadata } from './Media.js';
 
 export default class YouTube {
@@ -13,6 +10,11 @@ export default class YouTube {
       playlist: RegExp;
       video: RegExp;
    };
+
+   private concurrencyLimit = 15;
+   private activeCount = 0;
+   private queue: (() => void)[] = [];
+
    constructor() {
       this.urls = {
          pattern: /((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu\.be))\/(watch\?v=(.+)&list=|(playlist)\?list=|watch\?v=)?([^&]+)/,
@@ -20,6 +22,7 @@ export default class YouTube {
          video: /^((?:https?:)?\/\/)?((?:www|m|music)\.)?((?:youtube\.com|youtu.be)?)(\/(watch\?v=|embed\/|v\/)?)([\w\-]+)/,
       };
    }
+
    async search(query: string) {
       console.log(`Searching YouTube for: ${query}`);
       const result = (await ytsr.YouTube.search(query, { limit: 1, type: 'video' }))[0];
@@ -30,7 +33,7 @@ export default class YouTube {
          name: result.title,
          duration: result.duration,
          explicit: result.nsfw,
-         thumbnail: result.thumbnail?.url,
+         icon: result.thumbnail?.url,
          artist: {
             name: result.channel?.name,
             id: result.channel?.id,
@@ -40,7 +43,35 @@ export default class YouTube {
       } as TrackMetadata;
    }
 
+   private async enqueue<T>(task: () => Promise<T>): Promise<T> {
+      return new Promise<T>((resolve, reject) => {
+         const run = () => {
+            this.activeCount++;
+            task()
+               .then(resolve)
+               .catch(reject)
+               .finally(() => {
+                  this.activeCount--;
+                  if (this.queue.length > 0) {
+                     const next = this.queue.shift();
+                     if (next) next();
+                  }
+               });
+         };
+
+         if (this.activeCount < this.concurrencyLimit) {
+            run();
+         } else {
+            this.queue.push(run);
+         }
+      });
+   }
+
    public getAudioStream(url: string): Promise<NodeJS.ReadableStream> {
+      return this.enqueue(() => this.#getAudioStreamWithFallback(url));
+   }
+
+   #getAudioStreamWithFallback(url: string): Promise<NodeJS.ReadableStream> {
       return new Promise<NodeJS.ReadableStream>((resolve, reject) => {
          const stream = ytdl(url, {
             quality: 'highestaudio',
@@ -50,7 +81,7 @@ export default class YouTube {
 
          stream.once('error', (err) => {
             try {
-               const fallback = this.#getAudioStream(url); // need python for this :/
+               const fallback = this.#getAudioStream(url);
                resolve(fallback);
             } catch (fallbackErr) {
                reject(fallbackErr);
@@ -71,6 +102,7 @@ export default class YouTube {
             quiet: true,
             noWarnings: true,
             preferFreeFormats: true,
+            cookies: "C:/Users/vinic/Downloads/www.youtube.com_cookies.txt"
          },
          { stdio: ['ignore', 'pipe', 'pipe'] }
       );
@@ -97,6 +129,10 @@ export default class YouTube {
    }
 
    getAudioBuffer(url: string): Promise<Buffer> {
+      return this.enqueue(() => this.#getAudioBuffer(url));
+   }
+
+   #getAudioBuffer(url: string): Promise<Buffer> {
       return new Promise((resolve, reject) => {
          const subprocess = ytex.exec(
             url,

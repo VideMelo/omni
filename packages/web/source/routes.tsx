@@ -1,13 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import axios from 'axios';
 
 import Layout from './layout.jsx';
-import Home from './pages/Home.jsx';
-import Search from './pages/Search.jsx';
-import Login from './pages/Login.jsx';
-import Queue from './pages/Queue.jsx';
+import Home from './pages/home.js';
+import Search from './pages/search.js';
+import Login from './pages/login.js';
+import Queue from './pages/queue.js';
 
 import socket from './services/socket.js';
 import { useAuth } from './contexts/AuthContext.jsx';
@@ -63,13 +62,13 @@ const Loading = () => {
    }, []);
 
    return (
-      <main className="flex flex-col gap-3 items-center justify-center h-screen w-full">
+      <div className="flex flex-col gap-3 items-center justify-center h-screen w-full">
          <span className="animate-bounce">
             <Scout className="w-20 h-20 rounded-full animate-spin" />
          </span>
          <span className="font-medium text-lg">Loading</span>
          <span>{phrase}...</span>
-      </main>
+      </div>
    );
 };
 
@@ -98,7 +97,7 @@ const Routers = () => {
             setIsLoading(false);
 
             dispatch({ type: 'SET_USER', payload: user });
-            console.log(`[WS]: user: ${user.username}, connected with socket: ${socket.id}`);
+            console.log(`[OMNI]: user: ${user.username}, connected with socket: ${socket.id}`);
          });
       } else {
          setIsLoading(false);

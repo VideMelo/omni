@@ -10,9 +10,7 @@ export default class Broadcast extends Interaction {
          description: 'Execute a command in large scale for tests!',
       });
 
-      this.addStringOption((option) =>
-         option.setName('input').setDescription('Input for a command!').setRequired(true)
-      );
+      this.addStringOption((option) => option.setName('input').setDescription('Input for a command!').setRequired(true));
    }
 
    async execute({ client, context }: { client: Bot; context: InteractionContext }) {

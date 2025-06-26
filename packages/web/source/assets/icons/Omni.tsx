@@ -1,4 +1,4 @@
-const Omni = (props) => (
+const Omni = (props: any) => (
    <svg
       width="24"
       height="24"

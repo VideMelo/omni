@@ -3,6 +3,7 @@ import Bot from '../core/Bot.js';
 import { Playlist, Track } from './Media.js';
 import Spotify from './Spotify.js';
 import YouTube from './Youtube.js';
+import Deezer from './Deezer.js';
 
 type SearchType = 'track' | 'top' | 'url';
 
@@ -25,6 +26,7 @@ interface SearchResult {
 export default class Search {
    public spotify: Spotify;
    public youtube: YouTube;
+   public deezer;
    private client: Bot;
    public cache: Collection<string, SearchResult>;
    constructor(client: Bot) {
@@ -34,6 +36,7 @@ export default class Search {
       });
 
       this.youtube = new YouTube();
+      this.deezer = new Deezer();
       this.client = client;
       this.cache = new Collection();
    }
@@ -115,7 +118,7 @@ export default class Search {
 
    getcache(id: string) {
       const flattened = Array.from(this.cache.values()).flatMap((res) => [...(res.items.tracks ?? [])]) as Track[];
-      return flattened.find((item) => item.id == id);
+      return flattened.find((item) => item.id == id || item.key == id);
    }
 
    idealSearchType(query: string): SearchType | undefined {

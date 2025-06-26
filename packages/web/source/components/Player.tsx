@@ -36,7 +36,7 @@ interface Track {
    artist: Artist;
    album?: Album;
    duration: number;
-   thumbnail: string ;
+   icon: string;
 }
 
 interface PaletteColor {
@@ -68,24 +68,12 @@ interface PlayerState {
 function Player() {
    const location = useLocation();
    const { state, dispatch } = usePlayer();
-   const {
-      track,
-      playing,
-      paused,
-      timer,
-      palette,
-      cover,
-      repeat,
-      shuffled,
-      volume,
-      queue,
-      voice,
-   }: PlayerState = state;
+   const { track, playing, paused, timer, palette, cover, repeat, shuffled, volume, queue, voice }: PlayerState = state;
 
    useEffect(() => {
       if (!playing) return;
       const interval = setInterval(() => {
-         if (!paused || timer <= track?.duration!) {
+         if (!paused || timer <= track?.duration! / 1000) {
             dispatch({ type: 'SET_TIMER', payload: timer + 1 });
          }
       }, 1000);
@@ -114,16 +102,19 @@ function Player() {
    function updatePlayer() {
       socket.emit('queue:get', (data: any) => {
          if (!data) return dispatch({ type: 'RESET' });
+
          dispatch({ type: 'SET_QUEUE', payload: data.list });
          dispatch({ type: 'SET_TRACK', payload: { ...data.current, duration: data.current?.duration || 0 } });
-         dispatch({ type: 'SET_COVER', payload: data.current?.thumbnail });
+         dispatch({ type: 'SET_COVER', payload: data.current?.icon });
          dispatch({ type: 'SET_REPEAT', payload: data.repeat });
          dispatch({ type: 'SET_SHUFFLED', payload: data.shuffled });
-         handlePalette(data.current?.thumbnail);
+
+         handlePalette(data.current?.icon);
       });
 
       socket.emit('player:get', (data: any) => {
          if (!data) return dispatch({ type: 'RESET' });
+
          dispatch({ type: 'SET_PLAYING', payload: data.playing });
          dispatch({ type: 'SET_PAUSED', payload: data.paused });
          dispatch({ type: 'SET_VOLUME', payload: data.volume });
@@ -207,7 +198,7 @@ function Player() {
             <div
                className={`relative w-[400px] h-[400px] duration-700 transi ease-out delay-75 ${location.pathname == '/queue' ? '-mt-[730px]' : ''}`}
             >
-               <img src={cover} className="w-full h-full object-cover rounded-t-3xl" />
+               <img src={cover} className="w-[400px] h-[400px] object-cover rounded-t-3xl" />
                <div
                   className="absolute"
                   style={{
@@ -317,7 +308,7 @@ function Player() {
                         }`}
                         onClick={() => handleItemClick(item)}
                      >
-                        <img src={item.thumbnail} className="h-[50px] w-[50px] rounded-md" />
+                        <img src={item.icon} className="h-[50px] w-[50px] rounded-md" />
                         <div className="w-full">
                            <div className="font-medium text-sm font-poppins text-white w-1/2 truncate">{item.name}</div>
                            <div className="font-normal text-xs font-poppins text-[#B3B3B3]">{item.artist.name}</div>

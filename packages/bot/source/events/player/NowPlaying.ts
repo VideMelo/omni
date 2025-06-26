@@ -14,14 +14,14 @@ export default class NowPlaying extends Event {
    async execute(client: Bot, player: Player, track: Track) {
       if (!player.channel || !track.id) return;
 
-      const color = await client.embed.color(track?.thumbnail ?? '');
+      const color = await client.embed.color(track?.icon ?? '');
 
       const Embed = client.embed.new({
          color,
          author: {
             name: 'Now Playing!',
          },
-         thumbnail: track?.thumbnail ?? '',
+         thumbnail: track?.icon ?? '',
          title: `${track.name.length > 36 ? `${track.name.slice(0, 36)}...` : track.name}`,
          description: `${track.artist.name}`,
       });
@@ -34,7 +34,6 @@ export default class NowPlaying extends Event {
             embeds: [Embed],
             components: [],
          });
-         
       } catch (error: any) {
          if (error.code == 10008) return;
          logger.error(error);

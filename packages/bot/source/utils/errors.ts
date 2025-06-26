@@ -1,103 +1,74 @@
 import { AutocompleteInteraction } from 'discord.js';
 import type { InteractionContext } from '../modules/Interactions.js';
 import Player from '../handlers/Player.js';
+import Radio from '../handlers/Radio.js';
 
-type ErrorType =
-   | 'userNotInVoice'
-   | 'botNotInVoice'
-   | 'alreadyInVoice'
-   | 'inSameVoice'
-   | 'emptyQueue'
-   | 'notPlaying';
+type ErrorType = 'userNotInVoice' | 'botNotInVoice' | 'alreadyInVoice' | 'inSameVoice' | 'emptyQueue' | 'notPlaying' | 'isRadio';
+
+const ErrorMessages: Record<ErrorType, string> = {
+   userNotInVoice: 'You must join a voice channel first.',
+   botNotInVoice: 'I must join a voice channel first.',
+   alreadyInVoice: 'I am already connected to a voice channel.',
+   inSameVoice: 'You need to be in the same voice channel as me.',
+   notPlaying: 'The player is not currently playing any track.',
+   emptyQueue: 'There are no tracks in the queue.',
+   isRadio: 'You are connected to a radio, so this action is not available.',
+};
 
 type Interaction = InteractionContext | AutocompleteInteraction<'cached'>;
 
 class Verify {
-   constructor(private readonly respond: boolean = true) {}
-
-   private shouldRespond(interaction: Interaction): interaction is InteractionContext {
-      return !(interaction instanceof AutocompleteInteraction) && this.respond;
+   private shouldRespond(interaction: Interaction, respond: boolean): interaction is InteractionContext {
+      return !(interaction instanceof AutocompleteInteraction) && respond;
    }
 
-   private handle(
-      condition: boolean,
-      interaction: Interaction,
-      message: string,
-      type: ErrorType
-   ): boolean {
+   private handle(condition: boolean, interaction: Interaction, type: ErrorType, respond: boolean): boolean {
       if (!condition) return false;
 
-      if (this.shouldRespond(interaction)) {
-         interaction.replyErro(message);
+      if (this.shouldRespond(interaction, respond)) {
+         (interaction as InteractionContext).replyErro(ErrorMessages[type]);
       }
 
       return true;
    }
 
-   isUserNotInVoice(interaction: Interaction) {
+   isUserNotInVoice(interaction: Interaction, respond: boolean = true): boolean {
       const condition = !!interaction && !!interaction.member && !interaction.member.voice?.channel;
-
-      return this.handle(
-         condition,
-         interaction,
-         'You must join a voice channel first.',
-         'userNotInVoice'
-      );
+      return this.handle(condition, interaction, 'userNotInVoice', respond);
    }
 
-   isBotNotInVoice(interaction: Interaction) {
+   isBotNotInVoice(interaction: Interaction, respond: boolean = true): boolean {
       const condition = !interaction.guild?.members.me?.voice?.channel;
-
-      return this.handle(
-         condition,
-         interaction,
-         'I must join a voice channel first.',
-         'botNotInVoice'
-      );
+      return this.handle(condition, interaction, 'botNotInVoice', respond);
    }
 
-   isAlreadyInVoice(interaction: Interaction) {
+   isAlreadyInVoice(interaction: Interaction, respond: boolean = true): boolean {
       const condition = !!interaction.guild?.members.me?.voice?.channel;
-
-      return this.handle(
-         condition,
-         interaction,
-         'I am already connected to a voice channel.',
-         'alreadyInVoice'
-      );
+      return this.handle(condition, interaction, 'alreadyInVoice', respond);
    }
 
-   isNotInSameVoice(interaction: Interaction) {
+   isNotInSameVoice(interaction: Interaction, respond: boolean = true): boolean {
       const botChannel = interaction.guild?.members.me?.voice?.channel;
       const userChannel = interaction.member?.voice?.channel;
-
       const condition = !!botChannel && !!userChannel && botChannel.id !== userChannel.id;
-
-      return this.handle(
-         condition,
-         interaction,
-         'You need to be in the same voice channel as me.',
-         'inSameVoice'
-      );
+      return this.handle(condition, interaction, 'inSameVoice', respond);
    }
 
-   isNotPlaying(interaction: Interaction, player: Player) {
+   isNotPlaying(interaction: Interaction, player: Player, respond: boolean = true): boolean {
       const condition = !player.playing;
-
-      return this.handle(
-         condition,
-         interaction,
-         'The player is not currently playing any track.',
-         'notPlaying'
-      );
+      return this.handle(condition, interaction, 'notPlaying', respond);
    }
 
-   isEmptyQueue(interaction: Interaction) {
-      if (interaction instanceof AutocompleteInteraction) return;
+   isEmptyQueue(interaction: Interaction, respond: boolean = true): boolean {
+      if (interaction instanceof AutocompleteInteraction) return false;
 
       const condition = !interaction.queue?.tracks?.size;
+      return this.handle(condition, interaction, 'emptyQueue', respond);
+   }
 
-      return this.handle(condition, interaction, 'There are no tracks in the queue.', 'emptyQueue');
+   isRadio(interaction: Interaction, controller: Player | Radio, respond: boolean = true): controller is Radio {
+      const condition = controller.isRadio();
+      return this.handle(condition, interaction, 'isRadio', respond);
    }
 }
 

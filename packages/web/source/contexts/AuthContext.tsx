@@ -1,6 +1,5 @@
 import React, { createContext, useReducer, useContext, ReactNode, Dispatch } from 'react';
 
-// Types
 interface User {
    username: string | null;
    id: string | null;

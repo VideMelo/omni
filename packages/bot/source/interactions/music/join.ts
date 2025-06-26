@@ -15,6 +15,9 @@ export default class Join extends Interaction {
       try {
          if (client.verify.isUserNotInVoice(context)) return;
 
+         const player = client.getGuildPlayback(context.guild.id);
+         if (player) if (client.verify.isRadio(context, player)) return;
+
          context.noReply();
          client.initGuildPlayer(context.member!.voice.channel!, context.channel!);
       } catch (err: any) {

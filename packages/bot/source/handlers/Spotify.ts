@@ -1,7 +1,5 @@
 import SpotifyWebApi from 'spotify-web-api-node';
 import Logger from '../utils/logger.js';
-import { it } from 'node:test';
-import { Track } from './Media.js';
 
 interface SpotifyConfig {
    id: string;
@@ -27,7 +25,7 @@ interface SpotifyTrack {
    artist: SpotifyArtist;
    duration: number;
    url: string;
-   thumbnail?: string;
+   icon?: string;
    query?: string;
    album: SpotifyAlbum;
 }
@@ -38,7 +36,7 @@ interface SpotifyAlbum {
    name: string;
    artists?: Array<{ name: string; id: string }>;
    total: number;
-   thumbnail?: string;
+   icon?: string;
    url: string;
    tracks?: SpotifyApi.TrackObjectSimplified[] | SpotifyApi.TrackObjectFull[];
    popularity?: number;
@@ -49,7 +47,7 @@ interface SpotifyPlaylist {
    id: string;
    name: string;
    artist: string | { name: string; id: string } | undefined;
-   thumbnail: string;
+   icon: string;
    description: string | null;
    url: string;
    total: number;
@@ -144,18 +142,22 @@ export default class Spotify {
          return {
             type: options.types.length > 1 ? 'search' : options.types[0],
             items: {
-               tracks: result.body.tracks.items.map((item) => this.build(item)) || [],
+               tracks:
+                  result.body.tracks.items.filter((track) => (track.album.album_type == 'single' ? null : track)).map((track) => this.build(track)) ||
+                  [],
                artists:
-                  result.body.artists?.items.map((artist) => ({
-                     type: 'artist',
-                     id: artist.id,
-                     name: artist.name,
-                     icon: artist.images?.[0]?.url,
-                     popularity: artist.popularity,
-                     url: artist.external_urls?.spotify,
-                     genres: artist.genres,
-                     followers: artist.followers,
-                  })) || [],
+                  result.body.artists?.items
+                     .filter((artist) => artist.images?.[0]?.url)
+                     .map((artist) => ({
+                        type: 'artist',
+                        id: artist.id,
+                        name: artist.name,
+                        icon: artist.images?.[0]?.url,
+                        popularity: artist.popularity,
+                        url: artist.external_urls?.spotify,
+                        genres: artist.genres,
+                        followers: artist.followers,
+                     })) || [],
                albums:
                   result.body.albums?.items.map((album) => ({
                      type: 'album',
@@ -163,7 +165,7 @@ export default class Spotify {
                      name: album.name,
                      artists: album.artists.map((artist) => ({ name: artist.name, id: artist.id })),
                      total: album.total_tracks,
-                     thumbnail: album.images[0]?.url,
+                     icon: album.images[0]?.url,
                      url: album.external_urls.spotify,
                      tracks: [],
                   })) || [],
@@ -244,7 +246,7 @@ export default class Spotify {
          name: playlist.name,
          artist: playlist.owner.display_name,
          description: playlist.description,
-         thumbnail: playlist.images[0]?.url,
+         icon: playlist.images[0]?.url,
          url: playlist.external_urls.spotify,
          tracks: items.map((item) => (item.track ? this.build(item.track) : undefined)).filter(Boolean) as SpotifyTrack[],
          total,
@@ -264,7 +266,7 @@ export default class Spotify {
          id: album.id,
          name: album.name,
          artists: album.artists,
-         thumbnail: album.images[0].url,
+         icon: album.images[0].url,
          url: album.external_urls.spotify,
          total: album.tracks.total,
          tracks: album.tracks.items,
@@ -338,12 +340,12 @@ export default class Spotify {
             url: track.artists[0].external_urls.spotify,
          },
          duration: track.duration_ms,
-         thumbnail: track?.album?.images[0]?.url || undefined,
+         icon: track?.album?.images[0]?.url || undefined,
          album: {
             name: track.album.name,
             id: track.album.id,
             url: track.album.external_urls.spotify,
-            thumbnail: track.album.images[0]?.url,
+            icon: track.album.images[0]?.url,
             total: track.album.total_tracks,
          },
       };

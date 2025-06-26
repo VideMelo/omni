@@ -1,36 +1,35 @@
 import 'dotenv/config';
 
-import {
-   Client,
-   Collection,
-   GatewayIntentBits,
-   VoiceBasedChannel,
-   TextBasedChannel,
-} from 'discord.js';
+import { Client, Collection, GatewayIntentBits, VoiceBasedChannel, TextBasedChannel } from 'discord.js';
 
 import Interactions from '../modules/Interactions.js';
 import Events from '../modules/Events.js';
+import fs from 'node:fs/promises';
 
-import { server, io } from '../api/index.js';
+import { api, io, server } from '../api/index.js';
 import logger from '../utils/logger.js';
 import Verify from '../utils/errors.js';
 import Player from '../handlers/Player.js';
 import Search from '../handlers/Search.js';
 import Embed from '../utils/embed.js';
 import Button from '../utils/button.js';
+import Radio from '../handlers/Radio.js';
+import { RadioPlaylist } from '../handlers/Deezer.js';
+import { Track } from '../handlers/Media.js';
 
 export default class Bot extends Client {
    config: {
       token: string;
       id: string;
       port: string | number;
-      cache: string
+      cache: string;
       spotify: {
          id: string;
          secret: string;
       };
    };
    public players: Collection<string, Player>;
+   public radios: Collection<string, Radio>;
    public interactions: Interactions;
    public events: Events;
    public socket: typeof io;
@@ -62,6 +61,7 @@ export default class Bot extends Client {
       };
 
       this.players = new Collection();
+      this.radios = new Collection();
       this.interactions = new Interactions(this);
       this.verify = new Verify();
       this.embed = new Embed();
@@ -72,15 +72,14 @@ export default class Bot extends Client {
    }
 
    async initGuildPlayer(voice: VoiceBasedChannel, channel?: TextBasedChannel) {
-      if (!voice) return;
-
-      const existing = this.players.get(voice.guild.id);
-      if (existing) return existing;
+      if (!voice) return null;
+      const existing = this.getGuildPlayback(voice.id);
+      if (existing?.isRadio()) existing.connections.get(voice.id)?.destroy();
 
       const player = new Player(this, {
          voice: voice.id,
          guild: voice.guild.id,
-         channel: channel ? channel.id : undefined
+         channel: channel ? channel.id : undefined,
       });
       this.players.set(voice.guild.id, player);
 
@@ -99,16 +98,61 @@ export default class Bot extends Client {
       this.players.delete(guild);
    }
 
+   async initRadios() {
+      const data = await fs.readFile('radios.json', 'utf8');
+      const radios = JSON.parse(data) as RadioPlaylist[];
+      radios.map((item) => {
+         item.playlists.map((list) => {
+            if (!list.tracks?.length) return;
+            const radio = new Radio(this, {
+               genre: { id: item.genre.id.toString(), name: item.genre.name },
+               id: list.id.toString(),
+               playlist: list.tracks.map((track) => new Track(track)),
+               name: list.name,
+            });
+            this.radios.set(radio.id, radio);
+         });
+      });
+   }
+
+   async buildRadios() {
+      const data = await fs.readFile('lists.json', 'utf8');
+      const list = JSON.parse(data);
+
+      const radios = await Promise.all(
+         list.map(async (radio: any) => ({
+            ...radio,
+            playlists: await Promise.all(
+               radio.playlists.map(async (playlist: { name: string; ids: number[] }) => ({
+                  name: playlist.name,
+                  id: playlist.ids.join(),
+                  tracks: (await Promise.all(playlist.ids.map(async (id: any) => await this.search.deezer.getPlaylistTracks(id)))).flat(),
+               }))
+            ),
+         }))
+      );
+      await fs.writeFile('radios.json', JSON.stringify(radios, null, 2), 'utf8');
+   }
+
+   getGuildPlayback(guild: string): Radio | Player | null {
+      const player = this.players.get(guild);
+      if (player) return player;
+
+      const radio = this.radios.find((session) => session.connections.get(guild));
+      if (radio) return radio;
+      return null;
+   }
+
    override async login(token?: string): Promise<string> {
       try {
          logger.info('Started loading modules');
          await this.events.load();
          await this.interactions.load();
 
-         const loginToken = token ?? this.config.token;
-         const result = await super.login(loginToken);
+         const key = token ?? this.config.token;
+         const result = await super.login(key);
          server.listen(this.config.port, () => {
-            logger.done(`API is running on port: ${this.config.port}`);
+            logger.done(`Server is running on port: ${this.config.port}`);
          });
 
          return result;

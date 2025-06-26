@@ -12,9 +12,7 @@ export default class Ping extends Interaction {
 
    async execute({ client, context }: { client: Bot; context: InteractionContext }) {
       await context.raw.reply(
-         `**Pong!** 🏓 \nLatency is ${
-            Date.now() - context.raw.createdTimestamp
-         }ms.\nAPI Latency is ${Math.round(client.ws.ping)}ms`
+         `**Pong!** 🏓 \nLatency is ${Date.now() - context.raw.createdTimestamp}ms.\nAPI Latency is ${Math.round(client.ws.ping)}ms`
       );
    }
 }

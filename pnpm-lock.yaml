@@ -108,6 +108,9 @@ importers:
       concurrently:
         specifier: ^9.1.2
         version: 9.1.2
+      deezer-ts:
+        specifier: ^1.0.3
+        version: 1.0.3
       nodemon:
         specifier: ^2.0.22
         version: 2.0.22
@@ -1712,6 +1715,10 @@ packages:
 
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
+
+  deezer-ts@1.0.3:
+    resolution: {integrity: sha512-kIGS265MwqUBxz+NdD652D96eRpZZMAHFPC5b107lOfGFAH6kP9Mpbel1BZliNlVnTu+kfZrJzVFGmAgzfz7BQ==}
+    engines: {node: '>=16.0.0'}
 
   define-data-property@1.1.4:
     resolution: {integrity: sha512-rBMvIzlpA8v6E+SJZoo++HAYqsLrkg7MSfIinMPFhmkorw7X+dOXVJQs+QT69zGkzMyfDnIMN2Wid1+NbL3T+A==}
@@ -5439,6 +5446,8 @@ snapshots:
       mimic-response: 3.1.0
 
   deep-is@0.1.4: {}
+
+  deezer-ts@1.0.3: {}
 
   define-data-property@1.1.4:
     dependencies:

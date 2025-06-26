@@ -15,20 +15,15 @@ export default class VoiceStateUpdate extends Event {
       let members;
       if (client.user!.id == now.id) {
          members = [
-            ...Array.from(old?.channel?.members?.values() ?? []).map(
-               (member: Discord.GuildMember) => member.id
-            ),
-            ...Array.from(now?.channel?.members?.values() ?? []).map(
-               (member: Discord.GuildMember) => member.id
-            ),
+            ...Array.from(old?.channel?.members?.values() ?? []).map((member: Discord.GuildMember) => member.id),
+            ...Array.from(now?.channel?.members?.values() ?? []).map((member: Discord.GuildMember) => member.id),
          ];
 
          const clients = [now.guild.id, `${old?.channel?.id}`, `${now?.channel?.id}`, ...members];
          client.socket.to(clients).emit('bot:voice.update');
 
          if (old?.channel?.id && !now?.channel?.id) return player.disconnect();
-         if (old?.channel?.id && now?.channel?.id && old?.channel?.id !== now?.channel?.id)
-            return player.setVoiceChannel(now.channel.id);
+         if (old?.channel?.id && now?.channel?.id && old?.channel?.id !== now?.channel?.id) return player.setVoiceChannel(now.channel.id);
       }
 
       client.socket.to(now.id).emit('user:voice.update');

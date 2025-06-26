@@ -12,18 +12,10 @@ export default class Help extends Interaction {
          usage: '[command]',
       });
 
-      this.addStringOption((option) =>
-         option.setName('command').setDescription('Command name for help.').setAutocomplete(true)
-      );
+      this.addStringOption((option) => option.setName('command').setDescription('Command name for help.').setAutocomplete(true));
    }
 
-   async autocomplete({
-      client,
-      context,
-   }: {
-      client: Bot;
-      context: AutocompleteInteraction<'cached'>;
-   }) {
+   async autocomplete({ client, context }: { client: Bot; context: AutocompleteInteraction<'cached'> }) {
       const commands = client.interactions.items.map((command) => command);
 
       const focused = context.options.getFocused();
@@ -38,25 +30,17 @@ export default class Help extends Interaction {
          if (input) {
             const command = client.interactions.items.find((command) => command.name == input);
             if (command) {
-               const usage = command.help.usage
-                  ? `\n**Usage**\n</${command.name}:${command.id}> \`${command.help.usage}\`\n`
-                  : '';
-               const exemple = command.help.exemple
-                  ? `\n**Exemple**\n</${command.name}:${command.id}> \`${command.help.exemple}\``
-                  : '';
+               const usage = command.help.usage ? `\n**Usage**\n</${command.name}:${command.id}> \`${command.help.usage}\`\n` : '';
+               const exemple = command.help.exemple ? `\n**Exemple**\n</${command.name}:${command.id}> \`${command.help.exemple}\`` : '';
 
                const embed = client.embed.new({
                   author: {
                      name: `${client.user!.username} Help!`,
-                     iconURL: `https://cdn.discordapp.com/avatars/${client.user!.id}/${
-                        client.user!.avatar
-                     }.jpeg`,
+                     iconURL: `https://cdn.discordapp.com/avatars/${client.user!.id}/${client.user!.avatar}.jpeg`,
                   },
                   title: `/${command.name}`,
                   description: `${command.description}${usage}${exemple}`,
-                  thumbnail: `https://cdn.discordapp.com/avatars/${client.user!.id}/${
-                     client.user!.avatar
-                  }.jpeg`,
+                  thumbnail: `https://cdn.discordapp.com/avatars/${client.user!.id}/${client.user!.avatar}.jpeg`,
                });
                return await context.raw.reply({
                   embeds: [embed],
@@ -84,13 +68,9 @@ export default class Help extends Interaction {
             return client.embed.new({
                author: {
                   name: `${client.user!.username} Help!`,
-                  iconURL: `https://cdn.discordapp.com/avatars/${client.user!.id}/${
-                     client.user!.avatar
-                  }.jpeg`,
+                  iconURL: `https://cdn.discordapp.com/avatars/${client.user!.id}/${client.user!.avatar}.jpeg`,
                },
-               thumbnail: `https://cdn.discordapp.com/avatars/${client.user!.id}/${
-                  client.user!.avatar
-               }.jpeg`,
+               thumbnail: `https://cdn.discordapp.com/avatars/${client.user!.id}/${client.user!.avatar}.jpeg`,
                description: `Want info about a specific command?\n</${help.name}:${help.id}> \`[command]\``,
                fields: [{ name: 'COMMANDS', value: pages[index] }],
             });

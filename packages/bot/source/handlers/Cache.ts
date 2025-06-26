@@ -23,6 +23,7 @@ import logger from '../utils/logger.js';
 interface CachedTrack {
    id: string;
    encoded: string;
+   key: string;
    message: string;
 }
 
@@ -32,18 +33,16 @@ export default class Cache {
 
    constructor(client: Bot) {
       this.client = client;
-      this.channel = client.config.cache
+      this.channel = client.config.cache;
    }
 
    async archive(track: Track, stream: Stream.PassThrough, chunks: Buffer[]) {
       if (!stream) return;
 
-      const channel = await this.client.channels
-         .fetch(this.channel)
-         .catch((err: any) => logger.error('Cache: Invalid Text Channel ID'));
-      
+      const channel = await this.client.channels.fetch(this.channel).catch((err: any) => logger.error('Cache: Invalid Text Channel ID'));
+
       if (!channel) throw new Error('Text Channel not found!');
-      if (!channel.isSendable()) return
+      if (!channel.isSendable()) return;
 
       await new Promise((resolve, reject) => {
          stream.once('end', resolve);
@@ -62,14 +61,15 @@ export default class Cache {
 
       try {
          const file = 'tracks.json';
-         const fileExists = await fs
+         const existing = await fs
             .stat(file)
             .then(() => true)
             .catch(() => false);
-         const json: CachedTrack[] = fileExists ? JSON.parse(await fs.readFile(file, 'utf8')) : [];
+         const json: CachedTrack[] = existing ? JSON.parse(await fs.readFile(file, 'utf8')) : [];
 
          json.push({
             id: track.id,
+            key: track.key!,
             encoded: encoded,
             message: message.id,
          });
@@ -82,9 +82,9 @@ export default class Cache {
 
    async getTrackData(track: Track): Promise<Track | undefined> {
       try {
-         const dataRaw = await fs.readFile('tracks.json', 'utf8');
-         const cachedTracks: CachedTrack[] = JSON.parse(dataRaw);
-         const cached = cachedTracks.find((item) => item.id === track.id);
+         const data = await fs.readFile('tracks.json', 'utf8');
+         const tracks: CachedTrack[] = JSON.parse(data);
+         const cached = tracks.find((item) => item.id === track.id || item.key === track.key);
          if (!cached) return;
 
          const channel = (await this.client.channels.fetch(this.channel)) as TextChannel;

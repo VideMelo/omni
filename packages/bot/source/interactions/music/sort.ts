@@ -16,8 +16,10 @@ export default class Sort extends Interaction {
          if (client.verify.isNotInSameVoice(context)) return;
          if (client.verify.isEmptyQueue(context)) return;
 
-         const player = client.players.get(context.guild.id);
+         const player = client.getGuildPlayback(context.guild.id);
          if (!player) return await context.replyErro('No player found for this guild!');
+
+         if (client.verify.isRadio(context, player)) return;
 
          player.queue.reorder();
          return await context.raw.reply('Queue sorted!');

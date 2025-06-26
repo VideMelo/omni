@@ -1,58 +1,31 @@
-import fs from 'node:fs';
-import express from 'express';
+import express, { Request, Response } from 'express';
+import { Server, Socket } from 'socket.io';
+import http from 'http';
+
+import parser from 'body-parser';
 import cors from 'cors';
-import bodyParser from 'body-parser';
-import { createServer as createHTTPServer } from 'http';
-import { createServer as createHTTPSServer } from 'https';
-import { Server as SocketIOServer } from 'socket.io';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const production = process.env.NODE_ENV === 'production';
+import RegisterSocketHandlers from './sockets/index.js';
 
 const api = express();
-
-api.use(cors());
-
-api.use(bodyParser.urlencoded({ extended: true }));
-api.use(bodyParser.json());
-
-const server = production
-   ? createHTTPSServer(
-        {
-           key: fs.readFileSync(path.join(__dirname, 'key.pem')),
-           cert: fs.readFileSync(path.join(__dirname, 'cert.pem')),
-        },
-        api
-     )
-   : createHTTPServer(api);
-
-const io = new SocketIOServer(server, {
+const server = http.createServer(api);
+const io = new Server(server, {
    cors: {
       origin: '*',
    },
 });
 
-const routesPath = path.join(__dirname, 'routes');
-fs.readdirSync(routesPath).forEach((file) => {
-   if (file.endsWith('.ts')) {
-      import(`./routes/${file}`).then((routeModule) => {
-         api.use('/', routeModule.default || routeModule);
-      });
-   }
+api.use(cors());
+
+api.use(parser.urlencoded({ extended: true }));
+api.use(parser.json());
+
+api.get('/', (req: Request, res: Response) => {
+   res.send('Servidor Express + Socket.IO em TypeScript');
 });
 
-const socketsPath = path.join(__dirname, 'socket');
-fs.readdirSync(socketsPath).forEach((file) => {
-   if (file.endsWith('.ts')) {
-      import(`./socket/${file}`).then((socketModule) => {
-         const handler = socketModule.default || socketModule;
-         handler(io);
-      });
-   }
+io.on('connection', (socket: Socket) => {
+   RegisterSocketHandlers(socket)
 });
 
-export { server, io };
+export { api, io, server };

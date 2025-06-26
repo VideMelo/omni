@@ -14,30 +14,22 @@ export default class Interactions {
    }
 
    async load() {
-      const folders = fs
-         .readdirSync('./source/interactions')
-         .filter((file) => fs.statSync(`./source/interactions/${file}`).isDirectory());
+      const folders = fs.readdirSync('./source/interactions').filter((file) => fs.statSync(`./source/interactions/${file}`).isDirectory());
       try {
          logger.async('Started loading interactions:');
          await Promise.all(
             folders.map(async (folder) => {
-               const files = fs
-                  .readdirSync(`./source/interactions/${folder}`)
-                  .filter((file) => file.endsWith('.ts'));
+               const files = fs.readdirSync(`./source/interactions/${folder}`).filter((file) => file.endsWith('.ts'));
                await Promise.all(
                   files.map(async (file) => {
                      try {
-                        const { default: Interaction } = await import(
-                           `../interactions/${folder}/${file}`
-                        );
+                        const { default: Interaction } = await import(`../interactions/${folder}/${file}`);
                         const interaction = new Interaction();
                         if (interaction.name && interaction.description) {
                            this.items.set(interaction.name, interaction);
                            // logger.info(`${file} working`);
                         } else {
-                           logger.warn(
-                              `The interaction at ${file} is missing a required "name" or "descripition" property.`
-                           );
+                           logger.warn(`The interaction at ${file} is missing a required "name" or "descripition" property.`);
                         }
                      } catch (error: any) {
                         logger.error(`${file} failed: ${error}`, error);
@@ -95,19 +87,12 @@ export default class Interactions {
          }
 
          try {
-            if (
-               !interaction.appPermissions.has([
-                  Discord.PermissionFlagsBits.SendMessages,
-                  Discord.PermissionFlagsBits.ViewChannel,
-               ])
-            )
+            if (!interaction.appPermissions.has([Discord.PermissionFlagsBits.SendMessages, Discord.PermissionFlagsBits.ViewChannel]))
                throw new Error('No prmissions!');
             await command.execute({ client: this.client, context });
          } catch (error: any) {
             logger.error(`Error executing ${interaction.commandName}:`, error);
-            await context.replyErro(
-               `What the f#@&! A very serious error occurred, try again later. \`\`\`${error}\`\`\``
-            );
+            await context.replyErro(`What the f#@&! A very serious error occurred, try again later. \`\`\`${error}\`\`\``);
          }
       }
    }
@@ -147,9 +132,7 @@ export class InteractionContext {
    }
 
    get queue() {
-      return this.interaction.guild
-         ? this.client.players.get(this.interaction.guild.id)?.queue
-         : undefined;
+      return this.interaction.guild ? this.client.players.get(this.interaction.guild.id)?.queue : undefined;
    }
 
    get raw() {
@@ -184,10 +167,7 @@ export class InteractionContext {
             await this.interaction.channel.send({
                embeds: [embed],
             });
-         else
-            logger.error(
-               `Failed to send error message in ${this.interaction.guild?.name}#${this.interaction.channel?.name}`
-            );
+         else logger.error(`Failed to send error message in ${this.interaction.guild?.name}#${this.interaction.channel?.name}`);
       }
    }
 }

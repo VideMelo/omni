@@ -19,19 +19,13 @@ export default class Play extends Interaction {
    async autocomplete({ client, context }: { client: Bot; context: AutocompleteInteraction<'cached'> }) {
       try {
          if (client.verify.isNotInSameVoice(context) || client.verify.isUserNotInVoice(context)) {
-            return await context.respond([
-               {
-                  name: `Please join in voice channel to play music!`,
-                  value: `403`, // ;-;
-               },
-            ]);
+            return await context.respond([{ name: `Please join in voice channel to play music!`, value: `403` }]);
          }
 
          const focused = context.options.getFocused();
          if (!focused) return await context.respond([]);
 
          const search = await client.search.resolve(focused);
-         console.log(search);
          if (!search?.items.tracks) return await context.respond([]);
          const tracks = search.items.tracks.map((track: any) => {
             const { artist, name } = track;
@@ -58,7 +52,8 @@ export default class Play extends Interaction {
 
          await context.raw.deferReply();
 
-         let player = client.players.get(context.guild!.id);
+         let player = client.getGuildPlayback(context.guild.id);
+         if (player) if (client.verify.isRadio(context, player)) return;
 
          if (!player) player = await client.initGuildPlayer(context.member!.voice.channel!, context.channel!);
          if (!player) {

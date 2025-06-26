@@ -1,0 +1,275 @@
+[
+  {
+    "genre": {
+      "name": "Pop",
+      "id": 132,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/db7a604d9e7634a67d45cfc86b48370a/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "Pop Anthems Daily",
+        "ids": [
+          1282495565,
+          1976410782,
+          2578576804
+        ]
+      },
+      {
+        "name": "Global Pop Fusions",
+        "ids": [
+          178699142,
+          1440614715,
+          1786886682
+        ]
+      },
+      {
+        "name": "Chill & Soft Pop Vibes",
+        "ids": [
+          2252220162,
+          1282523285,
+          1386209585,
+          2994534926
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "Rap/Hip Hop",
+      "id": 116,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/5c27115d3b797954afff59199dad98d1/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "Rap Bangers Central",
+        "ids": [
+          1996494362,
+          1677006641,
+          2018572642,
+          1724212365,
+          4676818664,
+          1976915302
+        ]
+      },
+      {
+        "name": "Afro & West Coast Flow",
+        "ids": [
+          1440614715,
+          3153080842,
+          2979302822
+        ]
+      },
+      {
+        "name": "Chill & Workout Rap",
+        "ids": [
+          2527275444,
+          1719648481,
+          1786886682
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "Reggaeton",
+      "id": 122,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/44dfebf3cf943dd82759d9bd9063767a/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "Reggaeton Hit Parade",
+        "ids": [
+          1273315391,
+          2294931926,
+          6556887484,
+          1227811731
+        ]
+      },
+      {
+        "name": "Latin Chill & Classics",
+        "ids": [
+          3803398766,
+          5104249748,
+          254227453
+        ]
+      },
+      {
+        "name": "Retro Reggaeton Beats",
+        "ids": [
+          789123393,
+          4908050364,
+          2025681806
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "Rock",
+      "id": 152,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/b36ca681666d617edd0dcb5ab389a6ac/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "Rock Essentials Radio",
+        "ids": [
+          1306931615,
+          3126664682
+        ]
+      },
+      {
+        "name": "Hard Rock & Metal Mania",
+        "ids": [
+          2655390504,
+          3181211662,
+          1419215845
+        ]
+      },
+      {
+        "name": "Vintage Rock & Chill",
+        "ids": [
+          2994534926,
+          1413309725,
+          1728093421,
+          1405240385,
+          1578812305
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "Dance",
+      "id": 113,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/bd5fdfa1a23e02e2697818e09e008e69/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "Dance Floor Anthems",
+        "ids": [
+          2249258602,
+          1950512362,
+          706093725
+        ]
+      },
+      {
+        "name": "Chill & Melodic Dance",
+        "ids": [
+          1371651955,
+          2113355604,
+          2021502402
+        ]
+      },
+      {
+        "name": "Electronic Party Zone",
+        "ids": [
+          1291471565,
+          1495242491,
+          1902101402,
+          1936903262
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "R&B",
+      "id": 165,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/68a43aec844708e693cb99f47814153b/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "R&B Chart Toppers",
+        "ids": [
+          1999466402,
+          1677006641,
+          2021626162
+        ]
+      },
+      {
+        "name": "Sweet & Fresh R&B",
+        "ids": [
+          1786886682,
+          2021225582
+        ]
+      },
+      {
+        "name": "Chill R&B & Latin Love",
+        "ids": [
+          1925105902,
+          3196481502,
+          3482267886,
+          1314725125,
+          2276366266
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "Alternative",
+      "id": 85,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/fd252ab727d9a3b0b3c29014873f8f57/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "New Alternative Finds",
+        "ids": [
+          1257036831,
+          1402845615,
+          668126235
+        ]
+      },
+      {
+        "name": "Indie Party & Disco",
+        "ids": [
+          1311460845,
+          2558779444,
+          735488796
+        ]
+      },
+      {
+        "name": "Bedroom & Lazy Indie",
+        "ids": [
+          1337933445,
+          959141815,
+          2296059482
+        ]
+      }
+    ]
+  },
+  {
+    "genre": {
+      "name": "Classical",
+      "id": 98,
+      "icon": "https://cdn-images.dzcdn.net/images/misc/609f69b669b242252aa8ee09b5597655/250x250-000000-80-0-0.jpg"
+    },
+    "playlists": [
+      {
+        "name": "Classical Masterpieces",
+        "ids": [
+          747148961,
+          764477711
+        ]
+      },
+      {
+        "name": "Peaceful Piano Stream",
+        "ids": [
+          1787912442,
+          4590807924,
+          7058646664
+        ]
+      },
+      {
+        "name": "Relaxing Classical Moments",
+        "ids": [
+          4590825924,
+          803334081,
+          1618355015,
+          1767122962,
+          1673882381
+        ]
+      }
+    ]
+  }
+]

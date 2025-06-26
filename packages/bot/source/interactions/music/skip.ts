@@ -16,16 +16,17 @@ export default class Skip extends Interaction {
 
    async execute({ client, context }: { client: Bot; context: InteractionContext }) {
       try {
-         const player = client.players.get(context.guild.id);
+         const player = client.getGuildPlayback(context.guild.id);
+         if (!player) return await context.replyErro('No player found for this guild!');
+
+         if (client.verify.isRadio(context, player)) return;
 
          if (client.verify.isUserNotInVoice(context)) return;
          if (client.verify.isNotInSameVoice(context)) return;
          if (client.verify.isEmptyQueue(context)) return;
-         if (!player) return await context.replyErro('No player found for this guild!');
 
          let index = context.raw.options.getInteger('to');
-         if (index! > player.queue.tracks.size)
-            return await context.replyErro("You can't skip to a track that hasn't been added yet.");
+         if (index! > player.queue.tracks.size) return await context.replyErro("You can't skip to a track that hasn't been added yet.");
 
          if (index) {
             const track = player.queue.get(index);

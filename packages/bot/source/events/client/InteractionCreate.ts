@@ -9,10 +9,7 @@ export default class InteractionCreate extends Event {
       super({ name: 'interactionCreate' });
    }
 
-   async execute(
-      client: Bot,
-      interaction: ChatInputCommandInteraction<'cached'> | AutocompleteInteraction
-   ) {
+   async execute(client: Bot, interaction: ChatInputCommandInteraction<'cached'> | AutocompleteInteraction) {
       if (interaction.isChatInputCommand()) {
          client.interactions.process(interaction);
       }

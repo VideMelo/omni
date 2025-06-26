@@ -17,6 +17,11 @@ body {
    background-color: #000;
    color: #fff;
    font-family: 'Rubik', sans-serif;
+   overflow-y: hidden;
+}
+
+main {
+  max-width: 1820px;
 }
 
 .container-root {

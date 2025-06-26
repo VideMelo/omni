@@ -11,24 +11,23 @@ export default class Remove extends Interaction {
          usage: '<index>',
       });
 
-      this.addIntegerOption((option) =>
-         option.setName('index').setDescription('Index of the track to remove').setRequired(true)
-      );
+      this.addIntegerOption((option) => option.setName('index').setDescription('Index of the track to remove').setRequired(true));
    }
 
    async execute({ client, context }: { client: Bot; context: InteractionContext }) {
       try {
-         const player = client.players.get(context.guild.id);
+         const player = client.getGuildPlayback(context.guild.id);
+         if (!player) return await context.replyErro('No player found for this guild!');
+
+         if (client.verify.isRadio(context, player)) return;
 
          if (client.verify.isUserNotInVoice(context)) return;
          if (client.verify.isNotInSameVoice(context)) return;
          if (client.verify.isEmptyQueue(context)) return;
-         if (!player) return await context.replyErro('No player found for this guild!');
 
          const index = context.raw.options.getInteger('index');
 
-         if (index! > player.queue.tracks.size)
-            return await context.replyErro("You can't remove a track that hasn't been added yet.");
+         if (index! > player.queue.tracks.size) return await context.replyErro("You can't remove a track that hasn't been added yet.");
 
          const track = player.queue.remove(index!);
          if (track) return await context.raw.reply(`Removed \`${track.name}\` from the queue.`);

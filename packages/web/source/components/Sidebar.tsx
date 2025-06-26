@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-import Scout from '../assets/icons/Scout.js';
 import Home from '../assets/icons/Home.js';
 import Queue from '../assets/icons/Queue.js';
 import Like from '../assets/icons/Like.js';
